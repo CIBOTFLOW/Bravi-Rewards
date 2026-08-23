@@ -1,0 +1,18 @@
+{
+  "version": "0.5.0",
+  "repository": "CIBOTFLOW/Bravi-Rewards",
+  "effect_posture": "NO_EFFECT",
+  "preserve": ["extensions/fep-cart-match", "pages/fep-mission-page.html"],
+  "queue": [
+    {"id":"RW-0501","title":"Pin commerce, rewards, wallet, gift, and FEP-intent contracts","status":"READY"},
+    {"id":"RW-0502","title":"Add PostgreSQL rewards journal and wallet schema","status":"READY","dependencies":["RW-0501"]},
+    {"id":"RW-0503","title":"Implement signed settled sale/refund ingestion","status":"READY","dependencies":["RW-0502"]},
+    {"id":"RW-0504","title":"Implement accrual and linked full/partial reversal","status":"READY","dependencies":["RW-0503"]},
+    {"id":"RW-0505","title":"Implement wallet projection and reconciliation","status":"READY","dependencies":["RW-0504"]},
+    {"id":"RW-0506","title":"Implement atomic gifts and goals","status":"READY","dependencies":["RW-0505"]},
+    {"id":"RW-0507","title":"Implement reservation/capture/release/expiry","status":"READY","dependencies":["RW-0505"]},
+    {"id":"RW-0508","title":"Implement optional reward-to-FEP intent","status":"READY","dependencies":["RW-0507"]},
+    {"id":"RW-0509","title":"Connect Bravi read/write API with degraded states","status":"READY","dependencies":["RW-0505","RW-0506","RW-0508"]},
+    {"id":"RW-0510","title":"Activate real source or redemption","status":"BLOCKED_BY_HUMAN_AUTHORITY","dependencies":["RW-0509"]}
+  ]
+}
