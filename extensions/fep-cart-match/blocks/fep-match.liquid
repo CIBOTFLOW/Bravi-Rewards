@@ -1,0 +1,43 @@
+<div
+  data-fep-block
+  data-fep-cent-variant-id="{{ block.settings.contribution_cent_variant_id | default: '8720793665590' }}"
+  data-fep-dollar-variant-id="{{ block.settings.contribution_dollar_variant_id | default: '8721388634166' }}"
+  data-fep-default-route="{{ block.settings.default_route | default: 'small_business_capacity' }}"
+></div>
+
+{{ 'fep-match.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'fep-match.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "FEP Match",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "contribution_cent_variant_id",
+      "label": "FEP $0.01 contribution variant ID",
+      "default": "8720793665590",
+      "info": "Dev store default. Replace with main-store $0.01 variant ID when installed on main store."
+    },
+    {
+      "type": "text",
+      "id": "contribution_dollar_variant_id",
+      "label": "FEP $1.00 contribution variant ID",
+      "default": "8721388634166",
+      "info": "Dev store default. Replace with main-store $1.00 variant ID when installed on main store."
+    },
+    {
+      "type": "select",
+      "id": "default_route",
+      "label": "Default Bravi Rewards route",
+      "default": "small_business_capacity",
+      "options": [
+        { "value": "small_business_capacity", "label": "Small business capacity" },
+        { "value": "community_projects", "label": "Community projects" },
+        { "value": "environment_restoration", "label": "Environment restoration" }
+      ]
+    }
+  ]
+}
+{% endschema %}
