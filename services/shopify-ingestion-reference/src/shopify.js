@@ -81,6 +81,14 @@ function rewardForBasis(basisMinor, rateBps) {
   return safeNumber((numerator + 5_000n) / 10_000n, "reward amount");
 }
 
+function stringSet(values) {
+  if (values === null || values === undefined) return new Set();
+  if (typeof values[Symbol.iterator] !== "function") {
+    throw new ShopifyWebhookError("program exclusions must be iterable");
+  }
+  return new Set(Array.from(values, (value) => String(value)));
+}
+
 function normalizedProgram(program) {
   if (!program || typeof program !== "object") throw new ShopifyWebhookError("reward program is required");
   const id = String(program.id ?? "").trim();
@@ -93,8 +101,8 @@ function normalizedProgram(program) {
     version,
     currency,
     rateBps: Number(program.rateBps),
-    excludedProductIds: new Set((program.excludedProductIds ?? []).map(String)),
-    excludedVariantIds: new Set((program.excludedVariantIds ?? []).map(String)),
+    excludedProductIds: stringSet(program.excludedProductIds),
+    excludedVariantIds: stringSet(program.excludedVariantIds),
     excludeGiftCards: program.excludeGiftCards !== false,
   };
 }
