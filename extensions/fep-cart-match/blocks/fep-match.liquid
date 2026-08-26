@@ -1,8 +1,7 @@
 <div
   data-fep-block
-  data-fep-cent-variant-id="{{ block.settings.contribution_cent_variant_id | default: '8720793665590' }}"
-  data-fep-dollar-variant-id="{{ block.settings.contribution_dollar_variant_id | default: '8721388634166' }}"
-  data-fep-default-route="{{ block.settings.default_route | default: 'small_business_capacity' }}"
+  data-fep-default-route="{{ block.settings.default_route | default: 'where_needed_most' }}"
+  data-fep-intent-version="fep-intent-v1"
 ></div>
 
 {{ 'fep-match.css' | asset_url | stylesheet_tag }}
@@ -10,31 +9,18 @@
 
 {% schema %}
 {
-  "name": "FEP Match",
+  "name": "Bravvi FEP preference",
   "target": "section",
   "settings": [
     {
-      "type": "text",
-      "id": "contribution_cent_variant_id",
-      "label": "FEP $0.01 contribution variant ID",
-      "default": "8720793665590",
-      "info": "Dev store default. Replace with main-store $0.01 variant ID when installed on main store."
-    },
-    {
-      "type": "text",
-      "id": "contribution_dollar_variant_id",
-      "label": "FEP $1.00 contribution variant ID",
-      "default": "8721388634166",
-      "info": "Dev store default. Replace with main-store $1.00 variant ID when installed on main store."
-    },
-    {
       "type": "select",
       "id": "default_route",
-      "label": "Default Bravi Rewards route",
-      "default": "small_business_capacity",
+      "label": "Default impact preference",
+      "default": "where_needed_most",
       "options": [
-        { "value": "small_business_capacity", "label": "Small business capacity" },
-        { "value": "community_projects", "label": "Community projects" },
+        { "value": "where_needed_most", "label": "Where it is needed most" },
+        { "value": "work_enablement", "label": "Work enablement" },
+        { "value": "community_support", "label": "Community support" },
         { "value": "environment_restoration", "label": "Environment restoration" }
       ]
     }
