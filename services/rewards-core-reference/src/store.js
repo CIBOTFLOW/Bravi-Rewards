@@ -11,6 +11,7 @@ export class MemoryStore {
   goals = new Map()
   contributionIntents = new Map()
   rewardOrders = new Map()
+  amazonCatalogItems = new Map()
   outbox = new Map()
 
   replay(scope, key, requestHash) {
