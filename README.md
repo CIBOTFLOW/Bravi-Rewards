@@ -93,3 +93,17 @@ TREMENDOUS_CAMPAIGN_ID='<campaign id>'
 The reference adapter currently accepts USD minor units only. Keep the sandbox
 base URL until product or campaign configuration, funding, delivery, webhook
 deduplication, and reconciliation have passed end-to-end verification.
+
+
+## Amazon essentials and work-item catalog
+
+The workbook remains a manual research and SiteStripe review tool. Only rows
+with a final ASIN, final SiteStripe URL, reviewer identity, verification
+timestamp, and `VERIFIED` status may enter the runtime catalog through
+`POST /v1/amazon-catalog/import`.
+
+Use `catalog/amazon-sitestripe-import.template.json` for the API or the CSV
+template for editing/export. The exact workbook mapping and fail-closed rules
+are in `docs/amazon-sitestripe-import-contract.md`. Imported affiliate links
+are aggregate-pool-only: they cannot mint member points or act as a recipient
+eligibility signal.
