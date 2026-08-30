@@ -1,6 +1,7 @@
--- Bravvi Rewards authoritative persistence v1
--- DRAFT MIGRATION: do not apply to FEP or a shared product database.
--- Intended for an isolated Bravvi Rewards Supabase/Postgres project.
+-- Bravi Rewards authoritative persistence v1
+-- Approved for the MVP's shared FEP Supabase project only with the logical
+-- isolation controls in docs/adr/0001-shared-supabase-rewards-boundary.md.
+-- Do not expose these schemas or grant browser roles direct authority access.
 
 create extension if not exists pgcrypto;
 
