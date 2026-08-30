@@ -1,5 +1,11 @@
 # FEP Bravi Rewards Update Package
 
+## Bravi member application
+
+`apps/bravi-web` is the deployable v0.6 member experience and server-only BFF. It provides mobile-first Home, Discover, Give, Activity, and You routes, a wallet projection with degraded states, and a no-effect equal-value gift-card planner. The example `$400 / $15` plan produces 26 gift cards with $10 left unallocated.
+
+The app does not expose gift-card order creation, provider submission, FEP recipient selection, reservations, or money movement. Production fails closed without a member-session adapter and authenticated Rewards Core connection. See `docs/BRAVI_WEB_V0_6.md`.
+
 Replace these files in your Shopify app project:
 
 - `extensions/fep-cart-match/blocks/fep-match.liquid`

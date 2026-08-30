@@ -1,18 +1,23 @@
 {
-  "version": "0.5.0",
+  "version": "0.6.0",
   "repository": "CIBOTFLOW/Bravi-Rewards",
   "effect_posture": "NO_EFFECT",
   "preserve": ["extensions/fep-cart-match", "pages/fep-mission-page.html"],
   "queue": [
-    {"id":"RW-0501","title":"Pin commerce, rewards, wallet, gift, and FEP-intent contracts","status":"READY"},
-    {"id":"RW-0502","title":"Add PostgreSQL rewards journal and wallet schema","status":"READY","dependencies":["RW-0501"]},
-    {"id":"RW-0503","title":"Implement signed settled sale/refund ingestion","status":"READY","dependencies":["RW-0502"]},
-    {"id":"RW-0504","title":"Implement accrual and linked full/partial reversal","status":"READY","dependencies":["RW-0503"]},
-    {"id":"RW-0505","title":"Implement wallet projection and reconciliation","status":"READY","dependencies":["RW-0504"]},
-    {"id":"RW-0506","title":"Implement atomic gifts and goals","status":"READY","dependencies":["RW-0505"]},
-    {"id":"RW-0507","title":"Implement reservation/capture/release/expiry","status":"READY","dependencies":["RW-0505"]},
-    {"id":"RW-0508","title":"Implement optional reward-to-FEP intent","status":"READY","dependencies":["RW-0507"]},
-    {"id":"RW-0509","title":"Connect Bravi read/write API with degraded states","status":"READY","dependencies":["RW-0505","RW-0506","RW-0508"]},
-    {"id":"RW-0510","title":"Activate real source or redemption","status":"BLOCKED_BY_HUMAN_AUTHORITY","dependencies":["RW-0509"]}
+    {"id":"RW-0501","title":"Pin commerce, rewards, wallet, gift, and FEP-intent contracts","status":"REFERENCE_COMPLETE"},
+    {"id":"RW-0502","title":"Add PostgreSQL rewards journal and wallet schema","status":"REFERENCE_COMPLETE","dependencies":["RW-0501"]},
+    {"id":"RW-0503","title":"Implement signed settled sale/refund ingestion","status":"REFERENCE_COMPLETE_LIVE_SOURCE_BLOCKED","dependencies":["RW-0502"]},
+    {"id":"RW-0504","title":"Implement accrual and linked full/partial reversal","status":"REFERENCE_COMPLETE","dependencies":["RW-0503"]},
+    {"id":"RW-0505","title":"Implement wallet projection and reconciliation","status":"REFERENCE_COMPLETE_DURABLE_API_BLOCKED","dependencies":["RW-0504"]},
+    {"id":"RW-0506","title":"Implement atomic gifts and goals","status":"REFERENCE_COMPLETE","dependencies":["RW-0505"]},
+    {"id":"RW-0507","title":"Implement reservation/capture/release/expiry","status":"REFERENCE_COMPLETE_PROVIDER_RECONCILIATION_BLOCKED","dependencies":["RW-0505"]},
+    {"id":"RW-0508","title":"Implement optional reward-to-FEP intent","status":"REFERENCE_COMPLETE_LIVE_FEP_BLOCKED","dependencies":["RW-0507"]},
+    {"id":"RW-0509","title":"Connect Bravi read/write API with degraded states","status":"WEB_BFF_REFERENCE_COMPLETE","dependencies":["RW-0505","RW-0506","RW-0508"]},
+    {"id":"RW-0510","title":"Activate real source or redemption","status":"BLOCKED_BY_HUMAN_AUTHORITY","dependencies":["RW-0509"]},
+    {"id":"RW-0601","title":"Replace temporary session map with IdP-backed member sessions","status":"READY"},
+    {"id":"RW-0602","title":"Deploy authenticated Rewards Core and connect Bravi BFF","status":"READY","dependencies":["RW-0601"]},
+    {"id":"RW-0603","title":"Implement isolated consented recipient delivery step","status":"READY","dependencies":["RW-0602"]},
+    {"id":"RW-0604","title":"Verify Tremendous sandbox and webhook reconciliation end to end","status":"READY","dependencies":["RW-0602","RW-0603"]},
+    {"id":"RW-0605","title":"Enable production gift-card fulfillment","status":"BLOCKED_BY_HUMAN_AUTHORITY","dependencies":["RW-0604"]}
   ]
 }
