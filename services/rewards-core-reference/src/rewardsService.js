@@ -1,7 +1,22 @@
+import { validateAmazonCatalogItem } from './amazonCatalog.js'
 import { DomainError, id, nowIso, requireMinor, sha256 } from './canonical.js'
 import { MemoryStore } from './store.js'
 
 const WALLET_ACCOUNT_TYPES = new Set(['AVAILABLE', 'PENDING', 'RESERVED'])
+const REWARD_ORDER_SELECTION_MODES = new Set([
+  'SELF',
+  'DIRECT_GIFT',
+  'FEP_FAIR_RANDOM',
+  'FEP_NEED_PRIORITY',
+  'FEP_COMMUNITY_RECOGNITION',
+])
+const REWARD_ORDER_VISIBILITY = new Set([
+  'PRIVATE',
+  'GIVER_AND_RECIPIENT',
+  'PUBLIC_AGGREGATE',
+  'PUBLIC_ATTRIBUTED',
+])
+const REWARD_DELIVERY_CHANNELS = new Set(['EMAIL', 'PHONE', 'LINK'])
 
 export class RewardsService {
   constructor(store = new MemoryStore()) {
@@ -463,6 +478,294 @@ export class RewardsService {
     reservation.captureTransactionId = transaction.transactionId
     reservation.externalReference = externalReference
     return this.store.remember('capture', idempotencyKey, requestHash, reservation)
+  }
+
+  importAmazonCatalog(input) {
+    if (!input.idempotencyKey || !input.correlationId) {
+      throw new DomainError(
+        'INVALID_AMAZON_CATALOG_IMPORT',
+        'idempotencyKey and correlationId are required',
+      )
+    }
+    if (!Array.isArray(input.items) || input.items.length === 0) {
+      throw new DomainError(
+        'INVALID_AMAZON_CATALOG_IMPORT',
+        'items must be a non-empty array',
+      )
+    }
+    if (input.items.length > 1_000) {
+      throw new DomainError(
+        'AMAZON_CATALOG_IMPORT_TOO_LARGE',
+        'an import may contain at most 1000 items',
+      )
+    }
+
+    const requestHash = sha256(input)
+    const replay = this.store.replay('amazon-catalog-import', input.idempotencyKey, requestHash)
+    if (replay) return replay
+
+    const validated = input.items.map(validateAmazonCatalogItem)
+    const canonicalIds = new Set()
+    const asins = new Set()
+    for (const item of validated) {
+      if (canonicalIds.has(item.canonicalId) || asins.has(item.finalAsin)) {
+        throw new DomainError(
+          'DUPLICATE_AMAZON_CATALOG_ITEM',
+          'an import cannot repeat a canonical ID or final ASIN',
+          409,
+        )
+      }
+      if (this.store.amazonCatalogItems.has(item.canonicalId) ||
+          [...this.store.amazonCatalogItems.values()].some(
+            (existing) => existing.finalAsin === item.finalAsin,
+          )) {
+        throw new DomainError(
+          'AMAZON_CATALOG_ITEM_EXISTS',
+          'canonical ID or final ASIN already exists',
+          409,
+        )
+      }
+      canonicalIds.add(item.canonicalId)
+      asins.add(item.finalAsin)
+    }
+
+    const importedAt = nowIso()
+    const imported = validated.map((item) => ({
+      ...item,
+      catalogItemId: id('amazon_item'),
+      correlationId: input.correlationId,
+      importedAt,
+    }))
+    for (const item of imported) {
+      this.store.amazonCatalogItems.set(item.canonicalId, item)
+    }
+    const result = {
+      contractVersion: imported[0].contractVersion,
+      importedCount: imported.length,
+      items: imported.map((item) => ({
+        catalogItemId: item.catalogItemId,
+        canonicalId: item.canonicalId,
+        title: item.title,
+        category: item.category,
+        finalAsin: item.finalAsin,
+        verificationStatus: item.verificationStatus,
+        attributionMode: item.attributionMode,
+        memberPointsEligible: item.memberPointsEligible,
+        recipientEligibilitySignal: item.recipientEligibilitySignal,
+      })),
+    }
+    return this.store.remember(
+      'amazon-catalog-import',
+      input.idempotencyKey,
+      requestHash,
+      result,
+    )
+  }
+
+  planGiftCardDisbursement(input) {
+    const totalMinor = requireMinor(input.totalMinor, 'totalMinor')
+    const denominationMinor = requireMinor(input.denominationMinor, 'denominationMinor')
+    if (totalMinor <= 0 || denominationMinor <= 0) {
+      throw new DomainError('INVALID_DISBURSEMENT', 'total and denomination must be positive')
+    }
+    const orderCount = Math.floor(totalMinor / denominationMinor)
+    if (orderCount > 1000) {
+      throw new DomainError('DISBURSEMENT_TOO_LARGE', 'a plan may contain at most 1000 orders')
+    }
+    return {
+      totalMinor,
+      denominationMinor,
+      orderCount,
+      allocatedMinor: orderCount * denominationMinor,
+      remainderMinor: totalMinor % denominationMinor,
+      currency: input.currency ?? 'USD',
+    }
+  }
+
+  createGiftCardOrder(input) {
+    requireMinor(input.amountMinor)
+    if (input.amountMinor <= 0) throw new DomainError('INVALID_REWARD_ORDER', 'amount must be positive')
+    if (!input.idempotencyKey || !input.correlationId) {
+      throw new DomainError('INVALID_REWARD_ORDER', 'idempotencyKey and correlationId are required')
+    }
+    if (!input.providerProductId) {
+      throw new DomainError('INVALID_REWARD_ORDER', 'providerProductId is required')
+    }
+
+    const selectionMode = input.selectionMode ?? 'SELF'
+    const visibility = input.visibility ?? 'PRIVATE'
+    const deliveryChannel = input.deliveryChannel ?? 'EMAIL'
+    const providerEnvironment = input.providerEnvironment ?? 'sandbox'
+    if (!REWARD_ORDER_SELECTION_MODES.has(selectionMode)) {
+      throw new DomainError('INVALID_SELECTION_MODE', 'unsupported recipient selection mode')
+    }
+    if (!REWARD_ORDER_VISIBILITY.has(visibility)) {
+      throw new DomainError('INVALID_VISIBILITY', 'unsupported impact visibility')
+    }
+    if (!REWARD_DELIVERY_CHANNELS.has(deliveryChannel)) {
+      throw new DomainError('INVALID_DELIVERY_CHANNEL', 'unsupported delivery channel')
+    }
+    if (!['sandbox', 'production'].includes(providerEnvironment)) {
+      throw new DomainError('INVALID_PROVIDER_ENVIRONMENT', 'provider environment must be sandbox or production')
+    }
+    if (visibility === 'PUBLIC_ATTRIBUTED' &&
+        (input.attributionConsent !== true || !input.attributionAlias?.trim())) {
+      throw new DomainError(
+        'ATTRIBUTION_CONSENT_REQUIRED',
+        'public attribution requires explicit consent and an attribution alias',
+      )
+    }
+
+    const spenderWallet = this.getWallet(input.memberSubjectId, input.currency)
+    let recipientSubjectId = input.recipientSubjectId ?? null
+    if (selectionMode === 'SELF') {
+      recipientSubjectId = recipientSubjectId ?? input.memberSubjectId
+      if (recipientSubjectId !== input.memberSubjectId) {
+        throw new DomainError('INVALID_SELF_REDEMPTION', 'self redemption must name the spending member')
+      }
+    }
+    if (recipientSubjectId) this.getWallet(recipientSubjectId, input.currency)
+    if (selectionMode !== 'SELF' && !recipientSubjectId && !input.deliveryDestination) {
+      throw new DomainError(
+        'RECIPIENT_REQUIRED',
+        'a direct or FEP-selected gift requires an internal recipient or delivery destination',
+      )
+    }
+    if (selectionMode.startsWith('FEP_') && !input.fepAllocationId) {
+      throw new DomainError('FEP_ALLOCATION_REQUIRED', 'FEP-selected orders require an allocation reference')
+    }
+    if (spenderWallet.availableMinor < input.amountMinor) {
+      throw new DomainError('INSUFFICIENT_REWARDS', 'insufficient available rewards', 409)
+    }
+
+    const requestHash = sha256(input)
+    const replay = this.store.replay('reward-order-create', input.idempotencyKey, requestHash)
+    if (replay) return replay
+
+    const rewardOrderId = id('rorder')
+    const reservation = this.reserve({
+      memberSubjectId: input.memberSubjectId,
+      amountMinor: input.amountMinor,
+      currency: input.currency,
+      purpose: 'REDEMPTION',
+      referenceType: 'REWARD_ORDER',
+      referenceId: rewardOrderId,
+      expiresAt: input.expiresAt,
+      idempotencyKey: `reward-order-reserve:${input.idempotencyKey}`,
+      correlationId: input.correlationId,
+    })
+    const order = {
+      rewardOrderId,
+      memberSubjectId: input.memberSubjectId,
+      recipientSubjectId,
+      selectionMode,
+      fepAllocationId: input.fepAllocationId ?? null,
+      amountMinor: input.amountMinor,
+      currency: input.currency,
+      reservationId: reservation.reservationId,
+      provider: 'tremendous',
+      providerEnvironment,
+      providerProductId: input.providerProductId,
+      providerExternalId: `bravi:${rewardOrderId}`,
+      providerReference: null,
+      deliveryChannel,
+      deliveryDestinationDigest: input.deliveryDestination
+        ? sha256({ channel: deliveryChannel, destination: input.deliveryDestination })
+        : null,
+      visibility,
+      attributionAlias: visibility === 'PUBLIC_ATTRIBUTED' ? input.attributionAlias.trim() : null,
+      attributionConsentAt: visibility === 'PUBLIC_ATTRIBUTED' ? nowIso() : null,
+      status: 'RESERVED',
+      expiresAt: input.expiresAt,
+      correlationId: input.correlationId,
+      createdAt: nowIso(),
+    }
+    this.store.rewardOrders.set(rewardOrderId, order)
+    return this.store.remember('reward-order-create', input.idempotencyKey, requestHash, order)
+  }
+
+  async submitGiftCardOrder(rewardOrderId, input, provider) {
+    const order = this.store.rewardOrders.get(rewardOrderId)
+    if (!order) throw new DomainError('REWARD_ORDER_NOT_FOUND', 'reward order not found', 404)
+    if (order.status !== 'RESERVED') {
+      throw new DomainError('REWARD_ORDER_NOT_SUBMITTABLE', 'reward order is not reserved', 409)
+    }
+    if (!provider || typeof provider.createOrder !== 'function') {
+      throw new DomainError('REWARD_PROVIDER_REQUIRED', 'a reward provider adapter is required', 503)
+    }
+
+    const accepted = await provider.createOrder({
+      order,
+      deliveryDestination: input.deliveryDestination,
+      recipientName: input.recipientName ?? null,
+    })
+    return this.completeGiftCardOrder(rewardOrderId, {
+      providerReference: accepted.providerOrderId,
+      idempotencyKey: `provider-accepted:${order.providerExternalId}`,
+      correlationId: input.correlationId ?? order.correlationId,
+    })
+  }
+
+  completeGiftCardOrder(rewardOrderId, input) {
+    const order = this.store.rewardOrders.get(rewardOrderId)
+    if (!order) throw new DomainError('REWARD_ORDER_NOT_FOUND', 'reward order not found', 404)
+    if (!input.providerReference) {
+      throw new DomainError('PROVIDER_REFERENCE_REQUIRED', 'providerReference is required')
+    }
+    const request = { rewardOrderId, ...input }
+    const requestHash = sha256(request)
+    const replay = this.store.replay('reward-order-complete', input.idempotencyKey, requestHash)
+    if (replay) return replay
+    if (order.status !== 'RESERVED') {
+      throw new DomainError('REWARD_ORDER_NOT_COMPLETABLE', 'reward order is not reserved', 409)
+    }
+
+    this.captureReservation(order.reservationId, {
+      idempotencyKey: `reward-order-capture:${input.idempotencyKey}`,
+      correlationId: input.correlationId,
+      reason: 'GIFT_CARD_ORDER_CAPTURE',
+      externalReference: input.providerReference,
+    })
+    order.status = 'SUBMITTED'
+    order.providerReference = input.providerReference
+    order.submittedAt = nowIso()
+    return this.store.remember('reward-order-complete', input.idempotencyKey, requestHash, order)
+  }
+
+  markGiftCardOrderDelivered(rewardOrderId, input) {
+    const order = this.store.rewardOrders.get(rewardOrderId)
+    if (!order) throw new DomainError('REWARD_ORDER_NOT_FOUND', 'reward order not found', 404)
+    const request = { rewardOrderId, ...input }
+    const requestHash = sha256(request)
+    const replay = this.store.replay('reward-order-delivered', input.idempotencyKey, requestHash)
+    if (replay) return replay
+    if (order.status !== 'SUBMITTED') {
+      throw new DomainError('REWARD_ORDER_NOT_DELIVERABLE', 'reward order is not submitted', 409)
+    }
+    order.status = 'DELIVERED'
+    order.deliveredAt = input.deliveredAt ?? nowIso()
+    return this.store.remember('reward-order-delivered', input.idempotencyKey, requestHash, order)
+  }
+
+  cancelGiftCardOrder(rewardOrderId, input) {
+    const order = this.store.rewardOrders.get(rewardOrderId)
+    if (!order) throw new DomainError('REWARD_ORDER_NOT_FOUND', 'reward order not found', 404)
+    const request = { rewardOrderId, ...input }
+    const requestHash = sha256(request)
+    const replay = this.store.replay('reward-order-cancel', input.idempotencyKey, requestHash)
+    if (replay) return replay
+    if (order.status !== 'RESERVED') {
+      throw new DomainError('REWARD_ORDER_NOT_CANCELLABLE', 'only a reserved order can be cancelled', 409)
+    }
+    this.releaseReservation(order.reservationId, {
+      idempotencyKey: `reward-order-release:${input.idempotencyKey}`,
+      correlationId: input.correlationId,
+      reason: input.reason ?? 'REWARD_ORDER_CANCELLED',
+    })
+    order.status = 'CANCELLED'
+    order.cancelledAt = nowIso()
+    order.cancellationReason = input.reason ?? null
+    return this.store.remember('reward-order-cancel', input.idempotencyKey, requestHash, order)
   }
 
   createFepContributionIntent(input) {

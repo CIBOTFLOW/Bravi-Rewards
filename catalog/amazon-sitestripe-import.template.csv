@@ -1,0 +1,2 @@
+canonicalId,title,category,finalAsin,siteStripeUrl,affiliateAccountId,verificationStatus,verificationSource,verifiedAt,verifiedBy,sourceWorkbook,sourceWorkbookRow,notes
+work-boots-001,Work boots,WORK_ENABLEMENT,B0ABC12345,https://amzn.to/replace-after-manual-review,ciflow-20,VERIFIED,AMAZON_SITESTRIPE,2026-08-30T00:00:00Z,reviewer-id,Bravi_Amazon_SiteStripe_Link_Workbook.xlsx,2,"Exact brand, size, count, and variant checked manually."

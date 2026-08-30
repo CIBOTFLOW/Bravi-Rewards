@@ -1,0 +1,4 @@
+project_id = "lbsskynkwlfdexwncoud"
+
+[functions.tremendous-webhook]
+verify_jwt = false
