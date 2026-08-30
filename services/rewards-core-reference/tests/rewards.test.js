@@ -172,3 +172,149 @@ test('goals do not mutate authoritative wallet', () => {
   service.createGoal({ memberSubjectId: 'a', name: 'Italy', category: 'TRAVEL', targetAmountMinor: 500_000, currency: 'USD' })
   assert.equal(service.getWallet('a').availableMinor, 270_000)
 })
+
+
+test('$400 at $15 plans 26 gift cards and preserves the $10 remainder', () => {
+  const service = fixture()
+  assert.deepEqual(service.planGiftCardDisbursement({
+    totalMinor: 40_000,
+    denominationMinor: 1_500,
+    currency: 'USD',
+  }), {
+    totalMinor: 40_000,
+    denominationMinor: 1_500,
+    orderCount: 26,
+    allocatedMinor: 39_000,
+    remainderMinor: 1_000,
+    currency: 'USD',
+  })
+})
+
+test('self gift card redemption reserves then captures points', () => {
+  const service = fixture()
+  service.ingestSaleEvent(sale())
+  const order = service.createGiftCardOrder({
+    memberSubjectId: 'a',
+    selectionMode: 'SELF',
+    amountMinor: 1_500,
+    currency: 'USD',
+    providerProductId: 'STARBUCKS',
+    providerEnvironment: 'sandbox',
+    deliveryChannel: 'EMAIL',
+    deliveryDestination: 'a@example.test',
+    expiresAt: '2026-09-01T00:00:00Z',
+    visibility: 'PRIVATE',
+    idempotencyKey: 'reward-order-1',
+    correlationId: 'corr-reward-order-1',
+  })
+
+  assert.equal(order.status, 'RESERVED')
+  assert.equal(JSON.stringify(order).includes('a@example.test'), false)
+  assert.deepEqual(
+    [service.getWallet('a').availableMinor, service.getWallet('a').reservedMinor],
+    [268_500, 1_500],
+  )
+
+  service.completeGiftCardOrder(order.rewardOrderId, {
+    providerReference: 'tremendous-order-1',
+    idempotencyKey: 'reward-order-complete-1',
+    correlationId: 'corr-reward-order-1',
+  })
+  assert.deepEqual(
+    [service.getWallet('a').availableMinor, service.getWallet('a').reservedMinor],
+    [268_500, 0],
+  )
+  assert.equal(order.status, 'SUBMITTED')
+
+  service.markGiftCardOrderDelivered(order.rewardOrderId, {
+    deliveredAt: '2026-08-30T12:00:00Z',
+    idempotencyKey: 'reward-order-delivered-1',
+    correlationId: 'corr-reward-order-1',
+  })
+  assert.equal(order.status, 'DELIVERED')
+})
+
+test('direct gift order is idempotent and does not persist delivery destination', () => {
+  const service = fixture()
+  service.ingestSaleEvent(sale())
+  const input = {
+    memberSubjectId: 'a',
+    selectionMode: 'DIRECT_GIFT',
+    amountMinor: 1_500,
+    currency: 'USD',
+    providerProductId: 'STARBUCKS',
+    deliveryChannel: 'EMAIL',
+    deliveryDestination: 'friend@example.test',
+    expiresAt: '2026-09-01T00:00:00Z',
+    visibility: 'GIVER_AND_RECIPIENT',
+    idempotencyKey: 'direct-order-1',
+    correlationId: 'corr-direct-order-1',
+  }
+  const first = service.createGiftCardOrder(input)
+  const replay = service.createGiftCardOrder(input)
+  assert.equal(first.rewardOrderId, replay.rewardOrderId)
+  assert.equal(service.store.rewardOrders.size, 1)
+  assert.equal(JSON.stringify(first).includes('friend@example.test'), false)
+})
+
+test('cancelled gift card order releases its reservation', () => {
+  const service = fixture()
+  service.ingestSaleEvent(sale())
+  const order = service.createGiftCardOrder({
+    memberSubjectId: 'a',
+    selectionMode: 'DIRECT_GIFT',
+    amountMinor: 1_500,
+    currency: 'USD',
+    providerProductId: 'STARBUCKS',
+    deliveryChannel: 'LINK',
+    deliveryDestination: 'opaque-recipient',
+    expiresAt: '2026-09-01T00:00:00Z',
+    idempotencyKey: 'cancel-order-1',
+    correlationId: 'corr-cancel-order-1',
+  })
+  service.cancelGiftCardOrder(order.rewardOrderId, {
+    reason: 'RECIPIENT_UNAVAILABLE',
+    idempotencyKey: 'cancel-order-action-1',
+    correlationId: 'corr-cancel-order-1',
+  })
+  assert.equal(order.status, 'CANCELLED')
+  assert.deepEqual(
+    [service.getWallet('a').availableMinor, service.getWallet('a').reservedMinor],
+    [270_000, 0],
+  )
+})
+
+test('public attributed impact requires explicit consent and alias', () => {
+  const service = fixture()
+  service.ingestSaleEvent(sale())
+  assert.throws(() => service.createGiftCardOrder({
+    memberSubjectId: 'a',
+    selectionMode: 'DIRECT_GIFT',
+    amountMinor: 1_500,
+    currency: 'USD',
+    providerProductId: 'STARBUCKS',
+    deliveryChannel: 'EMAIL',
+    deliveryDestination: 'friend@example.test',
+    expiresAt: '2026-09-01T00:00:00Z',
+    visibility: 'PUBLIC_ATTRIBUTED',
+    idempotencyKey: 'public-order-1',
+    correlationId: 'corr-public-order-1',
+  }), /explicit consent/i)
+})
+
+test('FEP-selected gift card orders require an allocation reference', () => {
+  const service = fixture()
+  service.ingestSaleEvent(sale())
+  assert.throws(() => service.createGiftCardOrder({
+    memberSubjectId: 'a',
+    selectionMode: 'FEP_FAIR_RANDOM',
+    amountMinor: 1_500,
+    currency: 'USD',
+    providerProductId: 'STARBUCKS',
+    deliveryChannel: 'EMAIL',
+    deliveryDestination: 'recipient@example.test',
+    expiresAt: '2026-09-01T00:00:00Z',
+    idempotencyKey: 'fep-order-1',
+    correlationId: 'corr-fep-order-1',
+  }), /allocation reference/i)
+})
