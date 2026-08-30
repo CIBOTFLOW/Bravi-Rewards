@@ -1,45 +1,77 @@
-<section class="fep-page">
-  <h1>Fulfillment Economics Protocol</h1>
-  <p>
-    FEP is Luzione and Bravi's matched checkout layer. A customer may add a small contribution to an order,
-    choose a Bravi Rewards route, and receive an update after eligible value is allocated.
+<style>
+  .fem-page{--ink:#17201a;--muted:#647067;--paper:#f6f4ec;--line:rgba(23,32,26,.14);--green:#1f5b43;max-width:1180px;margin:0 auto;padding:clamp(24px,5vw,64px);color:var(--ink);background:radial-gradient(circle at 90% 0,rgba(216,239,154,.52),transparent 26rem),var(--paper);border-radius:32px;font-family:inherit}
+  .fem-page *{box-sizing:border-box}.fem-kicker{text-transform:uppercase;letter-spacing:.14em;color:var(--green);font-size:11px;font-weight:750}.fem-page h1{max-width:900px;margin:18px 0;font-size:clamp(48px,8vw,92px);line-height:.92;letter-spacing:-.07em}.fem-lede{max-width:700px;color:var(--muted);font-size:clamp(17px,2vw,22px);line-height:1.55}.fem-path{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:58px 0}.fem-card{min-height:220px;padding:24px;border:1px solid var(--line);border-radius:22px;background:rgba(255,255,255,.76)}.fem-card small{display:block;margin-bottom:56px;color:var(--green);font-weight:750}.fem-card h2{margin:0;font-size:22px;letter-spacing:-.03em}.fem-card p,.fem-section p{color:var(--muted);line-height:1.58}.fem-example{display:grid;grid-template-columns:1.3fr .7fr;gap:34px;margin:70px 0;padding:34px;border-radius:26px;background:var(--ink);color:#fff}.fem-example h2{margin:0;font-size:clamp(32px,5vw,56px);letter-spacing:-.055em;line-height:1}.fem-example strong{display:block;font-size:54px;letter-spacing:-.06em}.fem-example p{color:rgba(255,255,255,.68);line-height:1.55}.fem-section{padding:48px 0;border-top:1px solid var(--line)}.fem-section h2{font-size:clamp(30px,4vw,50px);letter-spacing:-.05em}.fem-list{padding:0;list-style:none}.fem-list li{display:grid;grid-template-columns:180px 1fr;gap:18px;padding:15px 0;border-top:1px solid var(--line);line-height:1.5}.fem-list span{color:var(--muted)}.fem-note{margin-top:32px;padding:18px;border:1px solid var(--line);border-radius:16px;color:var(--muted);font-size:13px;line-height:1.6}@media(max-width:760px){.fem-path,.fem-example{grid-template-columns:1fr}.fem-list li{grid-template-columns:1fr;gap:4px}} 
+</style>
+
+<section class="fem-page">
+  <p class="fem-kicker">Bravi Rewards × Fulfillment Economics Movement</p>
+  <h1>You → Rewards → Impact</h1>
+  <p class="fem-lede">
+    Earn value through Bravi Rewards, then decide what it should do: redeem an eligible
+    gift card for yourself, send one directly, or place value into a governed FEP allocation.
   </p>
 
-  <h2>This is not only charity</h2>
-  <p>
-    The goal is capacity return. Bravi Rewards helps initiate useful projects that can serve small businesses,
-    communities, and restoration needs. Bravi may help pay for part of a project, coordinate the service work,
-    supply labor or operators, and receive service revenue when the project is completed. That revenue can then
-    be distributed through the Bravi Rewards system and used to support future capacity.
-  </p>
+  <div class="fem-path">
+    <article class="fem-card">
+      <small>01 · SELF</small>
+      <h2>Redeem for yourself</h2>
+      <p>Your available points are reserved first and captured only after the gift-card provider accepts the order.</p>
+    </article>
+    <article class="fem-card">
+      <small>02 · DIRECT</small>
+      <h2>Gift someone</h2>
+      <p>Choose a denomination and recipient. Keep the activity private, share it with the recipient, or publish only aggregate impact.</p>
+    </article>
+    <article class="fem-card">
+      <small>03 · FEP</small>
+      <h2>Fund an allocation</h2>
+      <p>FEP may use fair random, need-priority, or community-recognition policy. People retain final authority; Sultan-FEP only advises.</p>
+    </article>
+  </div>
 
-  <h2>What customers choose</h2>
-  <ol>
-    <li><strong>Small business capacity:</strong> helps fund useful work for smaller operators and project partners.</li>
-    <li><strong>Community projects:</strong> helps initiate service projects requested by real communities or partners.</li>
-    <li><strong>Environment restoration:</strong> helps initiate cleanup, repair, or restoration work where feasible.</li>
-  </ol>
+  <section class="fem-example">
+    <div>
+      <p class="fem-kicker">Easy disbursement</p>
+      <h2>Small gifts, explicit economics.</h2>
+    </div>
+    <div>
+      <strong>$400 → 26</strong>
+      <p>Twenty-six $15 gift cards total $390. The remaining $10 stays visible for a later decision.</p>
+    </div>
+  </section>
 
-  <h2>How checkout matching works</h2>
-  <ol>
-    <li>The customer chooses a 2.5% or 5% contribution before checkout.</li>
-    <li>Luzione matches the customer contribution.</li>
-    <li>The order records the selected Bravi Rewards route and return preference.</li>
-    <li>After the order is confirmed, eligible value is queued for allocation, service planning, or project support.</li>
-    <li>If the customer requests an update, Bravi/Luzione can send the fulfillment or allocation status when available.</li>
-  </ol>
+  <section class="fem-section">
+    <h2>Choose your visibility.</h2>
+    <ul class="fem-list">
+      <li><strong>Private</strong><span>Only authorized operational participants can see the activity.</span></li>
+      <li><strong>Giver + recipient</strong><span>The people involved can see it; the public cannot.</span></li>
+      <li><strong>Public aggregate</strong><span>Only gift count, value, and reconciled status are included.</span></li>
+      <li><strong>Public attributed</strong><span>An opted-in alias may appear. Need evidence, contact details, provider references, and redemption links never do.</span></li>
+    </ul>
+  </section>
 
-  <h2>Returns and unused value</h2>
-  <p>
-    If an order is returned before the contribution has been allocated or work has begun, unused eligible value may be
-    returned, kept in Bravi Rewards, or held until the customer confirms reallocation, depending on the preference selected
-    at checkout and the applicable return policy. Work already completed is not clawed back from people, operators, or project partners.
-  </p>
+  <section class="fem-section">
+    <h2>How the backend is divided.</h2>
+    <ul class="fem-list">
+      <li><strong>Bravi Rewards</strong><span>Points, wallets, reservations, gift-card orders, and delivery instructions.</span></li>
+      <li><strong>FEP Platform</strong><span>Programs, funding rules, eligibility, allocations, human decisions, audit, and public impact.</span></li>
+      <li><strong>Sultan-FEP</strong><span>Bounded recommendations only—no approval, spending, final recipient selection, contact, or publication.</span></li>
+      <li><strong>Tremendous</strong><span>Delivery provider for approved gift-card orders and lifecycle status.</span></li>
+    </ul>
+  </section>
 
-  <h2>Why this matters</h2>
-  <p>
-    Traditional giving often ends as a disconnected donation. FEP is designed as an auditable commerce layer: customer match,
-    Luzione match, Bravi Rewards route, allocation record, service outcome, and return logic. The long-term objective is to
-    make commerce fund useful work while preserving transparency, accountability, and economic return.
+  <section class="fem-section">
+    <h2>Essentials and work items.</h2>
+    <p>
+      Verified catalog items may use Amazon Associates links. Any qualifying affiliate
+      earnings go to an aggregate FEP funding pool. Using a link is optional and does not
+      earn personal points, create donation credit, change eligibility, or improve priority.
+    </p>
+  </section>
+
+  <p class="fem-note">
+    Bravi Rewards points are not cash and gift-card availability may vary. Gifts to
+    individuals are generally not tax-deductible. Recommendation is not approval;
+    approval is not provider submission; provider submission is not delivery or reconciliation.
   </p>
 </section>
