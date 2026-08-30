@@ -1,3 +1,4 @@
+import { validateAmazonCatalogItem } from './amazonCatalog.js'
 import { DomainError, id, nowIso, requireMinor, sha256 } from './canonical.js'
 import { MemoryStore } from './store.js'
 
@@ -477,6 +478,88 @@ export class RewardsService {
     reservation.captureTransactionId = transaction.transactionId
     reservation.externalReference = externalReference
     return this.store.remember('capture', idempotencyKey, requestHash, reservation)
+  }
+
+  importAmazonCatalog(input) {
+    if (!input.idempotencyKey || !input.correlationId) {
+      throw new DomainError(
+        'INVALID_AMAZON_CATALOG_IMPORT',
+        'idempotencyKey and correlationId are required',
+      )
+    }
+    if (!Array.isArray(input.items) || input.items.length === 0) {
+      throw new DomainError(
+        'INVALID_AMAZON_CATALOG_IMPORT',
+        'items must be a non-empty array',
+      )
+    }
+    if (input.items.length > 1_000) {
+      throw new DomainError(
+        'AMAZON_CATALOG_IMPORT_TOO_LARGE',
+        'an import may contain at most 1000 items',
+      )
+    }
+
+    const requestHash = sha256(input)
+    const replay = this.store.replay('amazon-catalog-import', input.idempotencyKey, requestHash)
+    if (replay) return replay
+
+    const validated = input.items.map(validateAmazonCatalogItem)
+    const canonicalIds = new Set()
+    const asins = new Set()
+    for (const item of validated) {
+      if (canonicalIds.has(item.canonicalId) || asins.has(item.finalAsin)) {
+        throw new DomainError(
+          'DUPLICATE_AMAZON_CATALOG_ITEM',
+          'an import cannot repeat a canonical ID or final ASIN',
+          409,
+        )
+      }
+      if (this.store.amazonCatalogItems.has(item.canonicalId) ||
+          [...this.store.amazonCatalogItems.values()].some(
+            (existing) => existing.finalAsin === item.finalAsin,
+          )) {
+        throw new DomainError(
+          'AMAZON_CATALOG_ITEM_EXISTS',
+          'canonical ID or final ASIN already exists',
+          409,
+        )
+      }
+      canonicalIds.add(item.canonicalId)
+      asins.add(item.finalAsin)
+    }
+
+    const importedAt = nowIso()
+    const imported = validated.map((item) => ({
+      ...item,
+      catalogItemId: id('amazon_item'),
+      correlationId: input.correlationId,
+      importedAt,
+    }))
+    for (const item of imported) {
+      this.store.amazonCatalogItems.set(item.canonicalId, item)
+    }
+    const result = {
+      contractVersion: imported[0].contractVersion,
+      importedCount: imported.length,
+      items: imported.map((item) => ({
+        catalogItemId: item.catalogItemId,
+        canonicalId: item.canonicalId,
+        title: item.title,
+        category: item.category,
+        finalAsin: item.finalAsin,
+        verificationStatus: item.verificationStatus,
+        attributionMode: item.attributionMode,
+        memberPointsEligible: item.memberPointsEligible,
+        recipientEligibilitySignal: item.recipientEligibilitySignal,
+      })),
+    }
+    return this.store.remember(
+      'amazon-catalog-import',
+      input.idempotencyKey,
+      requestHash,
+      result,
+    )
   }
 
   planGiftCardDisbursement(input) {
