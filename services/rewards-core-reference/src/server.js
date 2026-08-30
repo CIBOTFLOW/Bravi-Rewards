@@ -38,6 +38,36 @@ const server = http.createServer(async (request, response) => {
     if (request.method === 'POST' && url.pathname === '/v1/goals') {
       return send(response, 201, service.createGoal(await readBody(request)))
     }
+    if (request.method === 'POST' && url.pathname === '/v1/gift-card-disbursement-plans') {
+      return send(response, 200, service.planGiftCardDisbursement(await readBody(request)))
+    }
+    if (request.method === 'POST' && url.pathname === '/v1/gift-card-orders') {
+      return send(response, 201, service.createGiftCardOrder(await readBody(request)))
+    }
+    const completeGiftCardOrder = url.pathname.match(/^\/v1\/gift-card-orders\/([^/]+)\/complete$/)
+    if (request.method === 'POST' && completeGiftCardOrder) {
+      return send(
+        response,
+        200,
+        service.completeGiftCardOrder(completeGiftCardOrder[1], await readBody(request)),
+      )
+    }
+    const deliverGiftCardOrder = url.pathname.match(/^\/v1\/gift-card-orders\/([^/]+)\/delivered$/)
+    if (request.method === 'POST' && deliverGiftCardOrder) {
+      return send(
+        response,
+        200,
+        service.markGiftCardOrderDelivered(deliverGiftCardOrder[1], await readBody(request)),
+      )
+    }
+    const cancelGiftCardOrder = url.pathname.match(/^\/v1\/gift-card-orders\/([^/]+)\/cancel$/)
+    if (request.method === 'POST' && cancelGiftCardOrder) {
+      return send(
+        response,
+        200,
+        service.cancelGiftCardOrder(cancelGiftCardOrder[1], await readBody(request)),
+      )
+    }
     if (request.method === 'POST' && url.pathname === '/v1/fep-contribution-intents') {
       return send(response, 201, service.createFepContributionIntent(await readBody(request)))
     }
