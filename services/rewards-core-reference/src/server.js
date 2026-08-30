@@ -2,8 +2,17 @@ import http from 'node:http'
 import { URL } from 'node:url'
 import { createDemoService } from './bootstrap.js'
 import { DomainError } from './canonical.js'
+import { TremendousClient } from './tremendousClient.js'
 
 const service = createDemoService()
+const tremendousClient = process.env.TREMENDOUS_API_KEY
+  ? new TremendousClient({
+      apiKey: process.env.TREMENDOUS_API_KEY,
+      environment: process.env.TREMENDOUS_ENVIRONMENT ?? 'sandbox',
+      fundingSourceId: process.env.TREMENDOUS_FUNDING_SOURCE_ID ?? 'BALANCE',
+      campaignId: process.env.TREMENDOUS_CAMPAIGN_ID ?? null,
+    })
+  : null
 const port = Number(process.env.PORT ?? 8090)
 
 async function readBody(request) {
@@ -43,6 +52,25 @@ const server = http.createServer(async (request, response) => {
     }
     if (request.method === 'POST' && url.pathname === '/v1/gift-card-orders') {
       return send(response, 201, service.createGiftCardOrder(await readBody(request)))
+    }
+    const submitGiftCardOrder = url.pathname.match(/^\/v1\/gift-card-orders\/([^/]+)\/submit$/)
+    if (request.method === 'POST' && submitGiftCardOrder) {
+      if (!tremendousClient) {
+        throw new DomainError(
+          'TREMENDOUS_NOT_CONFIGURED',
+          'Tremendous API credentials are not configured',
+          503,
+        )
+      }
+      return send(
+        response,
+        200,
+        await service.submitGiftCardOrder(
+          submitGiftCardOrder[1],
+          await readBody(request),
+          tremendousClient,
+        ),
+      )
     }
     const completeGiftCardOrder = url.pathname.match(/^\/v1\/gift-card-orders\/([^/]+)\/complete$/)
     if (request.method === 'POST' && completeGiftCardOrder) {
