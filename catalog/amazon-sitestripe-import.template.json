@@ -1,0 +1,21 @@
+{
+  "idempotencyKey": "amazon-workbook-import-YYYYMMDD-001",
+  "correlationId": "catalog-review-YYYYMMDD",
+  "items": [
+    {
+      "canonicalId": "work-boots-001",
+      "title": "Work boots",
+      "category": "WORK_ENABLEMENT",
+      "finalAsin": "B0ABC12345",
+      "siteStripeUrl": "https://amzn.to/replace-after-manual-review",
+      "affiliateAccountId": "ciflow-20",
+      "verificationStatus": "VERIFIED",
+      "verificationSource": "AMAZON_SITESTRIPE",
+      "verifiedAt": "2026-08-30T00:00:00Z",
+      "verifiedBy": "reviewer-id",
+      "sourceWorkbook": "Bravi_Amazon_SiteStripe_Link_Workbook.xlsx",
+      "sourceWorkbookRow": 2,
+      "notes": "Exact brand, size, count, and variant checked manually."
+    }
+  ]
+}
