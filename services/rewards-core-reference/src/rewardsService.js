@@ -601,6 +601,28 @@ export class RewardsService {
     return this.store.remember('reward-order-create', input.idempotencyKey, requestHash, order)
   }
 
+  async submitGiftCardOrder(rewardOrderId, input, provider) {
+    const order = this.store.rewardOrders.get(rewardOrderId)
+    if (!order) throw new DomainError('REWARD_ORDER_NOT_FOUND', 'reward order not found', 404)
+    if (order.status !== 'RESERVED') {
+      throw new DomainError('REWARD_ORDER_NOT_SUBMITTABLE', 'reward order is not reserved', 409)
+    }
+    if (!provider || typeof provider.createOrder !== 'function') {
+      throw new DomainError('REWARD_PROVIDER_REQUIRED', 'a reward provider adapter is required', 503)
+    }
+
+    const accepted = await provider.createOrder({
+      order,
+      deliveryDestination: input.deliveryDestination,
+      recipientName: input.recipientName ?? null,
+    })
+    return this.completeGiftCardOrder(rewardOrderId, {
+      providerReference: accepted.providerOrderId,
+      idempotencyKey: `provider-accepted:${order.providerExternalId}`,
+      correlationId: input.correlationId ?? order.correlationId,
+    })
+  }
+
   completeGiftCardOrder(rewardOrderId, input) {
     const order = this.store.rewardOrders.get(rewardOrderId)
     if (!order) throw new DomainError('REWARD_ORDER_NOT_FOUND', 'reward order not found', 404)
