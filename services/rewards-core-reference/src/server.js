@@ -47,6 +47,9 @@ const server = http.createServer(async (request, response) => {
     if (request.method === 'POST' && url.pathname === '/v1/goals') {
       return send(response, 201, service.createGoal(await readBody(request)))
     }
+    if (request.method === 'POST' && url.pathname === '/v1/amazon-catalog/import') {
+      return send(response, 201, service.importAmazonCatalog(await readBody(request)))
+    }
     if (request.method === 'POST' && url.pathname === '/v1/gift-card-disbursement-plans') {
       return send(response, 200, service.planGiftCardDisbursement(await readBody(request)))
     }
