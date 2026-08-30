@@ -35,11 +35,16 @@ Then refresh the cart page preview.
 ## Tremendous webhook
 
 The Supabase Edge Function in `supabase/functions/tremendous-webhook` verifies the
-`Tremendous-Webhook-Signature` against the untouched request body, then stores each
-event once in `public.bravi_reward_provider_events`.
+`Tremendous-Webhook-Signature` against the untouched request body. It retains only
+the provider/environment, event ID, event type, and SHA-256 payload digest through
+the service-only `bravi_record_webhook_event` boundary. Raw provider payloads,
+recipient details, and reward links are not stored in the receipt table.
 
-Deploy the migration and function, then set these Edge Function secrets without
-committing them to Git:
+Apply both migrations in timestamp order. The consolidation migration moves the
+authoritative receipt boundary to `bravi_private.provider_webhook_events` and
+removes the earlier public-schema inbox only when that table is empty.
+
+Set these Edge Function secrets without committing them to Git:
 
 ```bash
 supabase secrets set \
@@ -55,4 +60,6 @@ https://lbsskynkwlfdexwncoud.supabase.co/functions/v1/tremendous-webhook
 ```
 
 Use `https://api.tremendous.com` and `TREMENDOUS_ENVIRONMENT=production` only after
-the sandbox flow has been verified end to end.
+the sandbox flow has been verified end to end. The shared-project isolation
+decision is recorded in
+`docs/adr/0001-shared-supabase-rewards-boundary.md`.
