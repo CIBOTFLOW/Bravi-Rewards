@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { sha256Hex, verifyTremendousSignature } from "./signature.ts";
 
 const MAX_BODY_BYTES = 1_000_000;
+const EVENT_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -27,7 +28,11 @@ Deno.serve(async (request: Request) => {
   }
 
   const contentLength = Number(request.headers.get("content-length") ?? 0);
+  if (!Number.isFinite(contentLength) || contentLength < 0) {
+    return json({ error: "invalid_content_length" }, 400);
+  }
   if (contentLength > MAX_BODY_BYTES) return json({ error: "payload_too_large" }, 413);
+
   const rawBody = await request.text();
   if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
     return json({ error: "payload_too_large" }, 413);
@@ -48,48 +53,33 @@ Deno.serve(async (request: Request) => {
   }
 
   const eventUuid = typeof event.uuid === "string" ? event.uuid : "";
-  const eventType = typeof event.event === "string" ? event.event : "";
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(eventUuid) || !eventType) {
+  const eventType = typeof event.event === "string" ? event.event.trim() : "";
+  if (!EVENT_UUID.test(eventUuid) || !eventType) {
     return json({ error: "invalid_event" }, 400);
   }
 
-  const payload = event.payload && typeof event.payload === "object"
-    ? event.payload as Record<string, unknown>
-    : {};
-  const resource = payload.resource && typeof payload.resource === "object"
-    ? payload.resource as Record<string, unknown>
-    : {};
-  const row = {
-    provider: "tremendous",
-    provider_environment: environment,
-    event_uuid: eventUuid,
-    event_type: eventType,
-    provider_created_at: typeof event.created_utc === "string" ? event.created_utc : null,
-    resource_type: typeof resource.type === "string" ? resource.type : null,
-    resource_id: typeof resource.id === "string" ? resource.id : null,
-    payload: event,
-    payload_sha256: await sha256Hex(rawBody),
-    signature_verified: true,
-  };
-
-  const response = await fetch(
-    `${supabaseUrl}/rest/v1/bravi_reward_provider_events?on_conflict=provider,provider_environment,event_uuid`,
-    {
-      method: "POST",
-      headers: {
-        apikey: serviceRoleKey,
-        authorization: `Bearer ${serviceRoleKey}`,
-        "content-type": "application/json",
-        prefer: "resolution=ignore-duplicates,return=representation",
-      },
-      body: JSON.stringify(row),
+  // Keep the raw provider payload in memory only. The authoritative Bravi boundary
+  // stores the minimum replay/audit facts and a digest, not recipient or reward data.
+  const payloadDigest = await sha256Hex(rawBody);
+  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/bravi_record_webhook_event`, {
+    method: "POST",
+    headers: {
+      apikey: serviceRoleKey,
+      authorization: `Bearer ${serviceRoleKey}`,
+      "content-type": "application/json",
     },
-  );
+    body: JSON.stringify({
+      _provider: `tremendous:${environment}`,
+      _event_id: eventUuid,
+      _event_type: eventType,
+      _payload_digest: payloadDigest,
+    }),
+  });
   if (!response.ok) {
-    console.error("Failed to persist Tremendous event", response.status, await response.text());
+    console.error("Failed to persist Tremendous event metadata", response.status);
     return json({ error: "persistence_failed" }, 500);
   }
 
-  const inserted = await response.json() as unknown[];
-  return json({ received: true, duplicate: inserted.length === 0 });
+  const inserted = await response.json() as boolean;
+  return json({ received: true, duplicate: inserted === false });
 });
