@@ -63,3 +63,33 @@ Use `https://api.tremendous.com` and `TREMENDOUS_ENVIRONMENT=production` only af
 the sandbox flow has been verified end to end. The shared-project isolation
 decision is recorded in
 `docs/adr/0001-shared-supabase-rewards-boundary.md`.
+
+
+## Tremendous order submission
+
+The reference Rewards service now supports a reserve-first provider flow:
+
+1. create a gift-card order at `POST /v1/gift-card-orders`;
+2. submit the reserved order at `POST /v1/gift-card-orders/{id}/submit`;
+3. provide the same one-time `deliveryDestination` used when reserving it.
+
+The adapter sends one reward per provider order and uses
+`bravi:{rewardOrderId}` as Tremendous's stable `external_id`. A confirmed
+`200` or idempotent `201` captures the reservation. Provider conflicts,
+timeouts, and ambiguous failures leave the balance reserved for reconciliation.
+The response boundary retains provider IDs and statuses only; raw contacts and
+LINK delivery URLs are never retained.
+
+Configure the reference service outside source control:
+
+```bash
+TREMENDOUS_API_KEY='<sandbox bearer token>'
+TREMENDOUS_ENVIRONMENT='sandbox'
+TREMENDOUS_FUNDING_SOURCE_ID='BALANCE'
+# Optional; when absent, each reward order's verified product ID is used.
+TREMENDOUS_CAMPAIGN_ID='<campaign id>'
+```
+
+The reference adapter currently accepts USD minor units only. Keep the sandbox
+base URL until product or campaign configuration, funding, delivery, webhook
+deduplication, and reconciliation have passed end-to-end verification.
