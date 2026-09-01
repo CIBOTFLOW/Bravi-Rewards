@@ -1,6 +1,7 @@
 <div
-  data-fep-block
-  data-fep-context="section"
+  data-fep-embed
+  hidden
+  data-fep-context="drawer"
   data-fep-cent-variant-id="{{ block.settings.contribution_cent_variant_id | default: '8720793665590' }}"
   data-fep-dollar-variant-id="{{ block.settings.contribution_dollar_variant_id | default: '8721388634166' }}"
   data-fep-default-route="{{ block.settings.default_route | default: 'where_needed_most' }}"
@@ -14,22 +15,20 @@
 
 {% schema %}
 {
-  "name": "FEP Movement contribution",
-  "target": "section",
+  "name": "FEP Movement cart drawer",
+  "target": "body",
   "settings": [
     {
       "type": "text",
       "id": "contribution_cent_variant_id",
       "label": "$0.01 contribution variant ID",
-      "default": "8720793665590",
-      "info": "Active, non-inventory Shopify variant used for the cents portion."
+      "default": "8720793665590"
     },
     {
       "type": "text",
       "id": "contribution_dollar_variant_id",
       "label": "$1.00 contribution variant ID",
-      "default": "8721388634166",
-      "info": "Active, non-inventory Shopify variant used for the dollar portion."
+      "default": "8721388634166"
     },
     {
       "type": "range",

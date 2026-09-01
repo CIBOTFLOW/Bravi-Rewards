@@ -11,12 +11,19 @@ The adapter:
 - maps supported topics to canonical economic/privacy events;
 - calculates an eligible merchandise basis using integer minor units;
 - excludes configured product/variant IDs and gift cards;
+- recognizes allowlisted FEP contribution variants separately from the rewards basis;
+- derives contribution and reversal amounts from settled/refunded Shopify line prices, never browser claims;
 - pins every economic event to an immutable reward-program id/version/rate/currency;
 - emits linked refund reversal intent rather than performing a balance mutation;
 - treats cancellation alone as non-economic;
 - emits privacy/uninstall events without carrying customer email or phone data.
 
 The authoritative Rewards service must independently enforce replay protection, original-accrual linkage, reversal caps, account binding, program state, and ledger balance before any wallet state changes.
+
+Configure the active $1.00 and $0.01 contribution variants in
+`fepContributionVariantIds`. They are automatically excluded from rewards
+earning. Paid events expose `fepContribution`; refund events expose
+`fepContributionReversal`. Client line properties remain intent metadata only.
 
 ## Supported topics
 
