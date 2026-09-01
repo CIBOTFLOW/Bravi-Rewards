@@ -1,5 +1,10 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
+import {
+  summarizeFepContributionOrder,
+  summarizeFepContributionRefund,
+} from "./fepContribution.js";
+
 const TOPICS = new Map([
   ["orders/paid", "ORDER_SETTLED"],
   ["orders/cancelled", "ORDER_CANCELLED"],
@@ -103,6 +108,7 @@ function normalizedProgram(program) {
     rateBps: Number(program.rateBps),
     excludedProductIds: stringSet(program.excludedProductIds),
     excludedVariantIds: stringSet(program.excludedVariantIds),
+    fepContributionVariantIds: stringSet(program.fepContributionVariantIds),
     excludeGiftCards: program.excludeGiftCards !== false,
   };
 }
@@ -112,6 +118,7 @@ function lineIsEligible(line, program) {
   const variantId = toBigIntId(line.variant_id);
   if (productId && program.excludedProductIds.has(productId)) return false;
   if (variantId && program.excludedVariantIds.has(variantId)) return false;
+  if (variantId && program.fepContributionVariantIds.has(variantId)) return false;
   if (program.excludeGiftCards && line.gift_card === true) return false;
   return true;
 }
@@ -206,12 +213,17 @@ export function normalizeVerifiedShopifyWebhook({ rawBody, headers, secret, prog
     const orderId = toBigIntId(payload?.id);
     if (!orderId) throw new ShopifyWebhookError("order id is required");
     const basisMinor = computeEligibleOrderBasisMinor(payload, program);
+    const fepContribution = summarizeFepContributionOrder(
+      payload,
+      program.fepContributionVariantIds,
+    );
     return {
       ...envelope,
       economic: true,
       resource: { orderId },
       basisMinor,
       rewardMinor: rewardForBasis(basisMinor, program.rateBps),
+      fepContribution,
       currency: program.currency,
     };
   }
@@ -221,12 +233,17 @@ export function normalizeVerifiedShopifyWebhook({ rawBody, headers, secret, prog
     const orderId = toBigIntId(payload?.order_id);
     if (!refundId || !orderId) throw new ShopifyWebhookError("refund and linked order ids are required");
     const basisMinor = computeEligibleRefundBasisMinor(payload, program);
+    const fepContributionReversal = summarizeFepContributionRefund(
+      payload,
+      program.fepContributionVariantIds,
+    );
     return {
       ...envelope,
       economic: true,
       resource: { refundId, orderId },
       basisMinor,
       rewardReversalMinor: rewardForBasis(basisMinor, program.rateBps),
+      fepContributionReversal,
       currency: program.currency,
       requiresOriginalAccrualLink: true,
     };

@@ -1,38 +1,58 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
-const js = await readFile(new URL('../assets/fep-match.js', import.meta.url), 'utf8');
-const liquid = await readFile(new URL('../blocks/fep-match.liquid', import.meta.url), 'utf8');
+const js = await readFile(new URL("../assets/fep-match.js", import.meta.url), "utf8");
+const css = await readFile(new URL("../assets/fep-match.css", import.meta.url), "utf8");
+const block = await readFile(new URL("../blocks/fep-match.liquid", import.meta.url), "utf8");
+const drawer = await readFile(new URL("../blocks/fep-cart-drawer.liquid", import.meta.url), "utf8");
+const source = `${js}\n${css}\n${block}\n${drawer}`;
 
-const source = `${js}\n${liquid}`;
-
-test('theme extension never adds or removes contribution products', () => {
-  assert.doesNotMatch(source, /\/cart\/add\.js/);
-  assert.doesNotMatch(source, /\/cart\/change\.js/);
-  assert.doesNotMatch(source, /contribution_cent_variant_id/i);
-  assert.doesNotMatch(source, /contribution_dollar_variant_id/i);
+test("customer choice creates priced Shopify cart lines", () => {
+  assert.match(js, /cart\/add\.js/);
+  assert.match(js, /cart\/update\.js/);
+  assert.match(js, /contributionItems/);
+  assert.match(js, /quantity: dollars/);
+  assert.match(js, /quantity: cents/);
+  assert.match(block, /contribution_cent_variant_id/);
+  assert.match(block, /contribution_dollar_variant_id/);
 });
 
-test('theme extension stores preference metadata only', () => {
-  assert.match(js, /\/cart\/update\.js/);
-  assert.match(js, /_Bravvi FEP Route Preference/);
-  assert.match(js, /_Bravvi FEP Intent Version/);
+test("the contribution excludes itself from percentage calculations", () => {
+  assert.match(js, /baseSubtotalMinor/);
+  assert.match(js, /filter\(\(item\) => !isFepItem\(item, config\)\)/);
+  assert.match(js, /Math\.round\(subtotal \* rate\)/);
+});
+
+test("cart lines carry an auditable intent but do not claim allocation", () => {
+  assert.match(js, /_FEP Intent Version/);
+  assert.match(js, /_FEP Contribution Minor/);
+  assert.match(js, /_FEP Route Code/);
+  assert.match(js, /_FEP Source/);
   assert.match(js, /shopify_theme_cart/);
+  assert.match(js, /Allocation begins only after Shopify confirms payment/);
 });
 
-test('copy states that preference does not create economic effect', () => {
-  assert.match(js, /does not add a charge, create Rewards, reserve funding, or allocate money/);
-  assert.match(js, /Economic value is created only from verified server-side events/);
+test("drawer embed mounts responsively and refreshes theme cart surfaces", () => {
+  assert.match(drawer, /"target": "body"/);
+  assert.match(drawer, /data-fep-embed/);
+  assert.match(js, /data-fep-drawer-mount/);
+  assert.match(js, /MutationObserver/);
+  assert.match(js, /cart-drawer/);
+  assert.match(js, /cart:refresh/);
+  assert.match(js, /shopify:cart:lines-update/);
+  assert.match(js, /sections: SECTION_IDS/);
+  assert.doesNotMatch(js, /window\.location\.reload/);
 });
 
-test('client no longer offers contribution rate controls', () => {
-  assert.doesNotMatch(source, /2\.5%/);
-  assert.doesNotMatch(source, /5%/);
-  assert.doesNotMatch(source, /Match 2\.5/);
-  assert.doesNotMatch(source, /Match 5/);
+test("customer-facing terminology uses Movement, never Protocol", () => {
+  assert.match(source, /Fulfillment Economics Movement/);
+  assert.doesNotMatch(source, /Fulfillment Economics Protocol/i);
 });
 
-test('checkout preference has explicit current version', () => {
-  assert.match(liquid, /data-fep-intent-version="fep-intent-v1"/);
+test("extension exposes two configurable percentage choices", () => {
+  assert.match(block, /primary_percent/);
+  assert.match(block, /secondary_percent/);
+  assert.match(block, /fep-contribution-v2/);
+  assert.match(js, /data-fep-rate/);
 });
