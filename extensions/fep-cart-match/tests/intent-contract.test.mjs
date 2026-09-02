@@ -56,3 +56,20 @@ test("extension exposes two configurable percentage choices", () => {
   assert.match(block, /fep-contribution-v2/);
   assert.match(js, /data-fep-rate/);
 });
+
+test("contribution requires an accessible explicit opt-in", () => {
+  assert.match(js, /data-fep-opt-in/);
+  assert.match(js, /I choose to add a priced Movement contribution/);
+  assert.match(js, /Choose the explicit opt-in before adding/);
+  assert.match(js, /role="group" aria-label="Choose a contribution amount"/);
+});
+
+test("both cart surfaces expose a default-off kill switch", () => {
+  assert.match(block, /data-fep-enabled/);
+  assert.match(drawer, /data-fep-enabled/);
+  assert.match(block, /"id": "enabled"/);
+  assert.match(drawer, /"id": "enabled"/);
+  assert.match(block, /"default": false/);
+  assert.match(drawer, /"default": false/);
+  assert.match(js, /kill_switch|currently unavailable|config\.enabled/);
+});

@@ -2,6 +2,7 @@
   data-fep-embed
   hidden
   data-fep-context="drawer"
+  data-fep-enabled="{{ block.settings.enabled }}"
   data-fep-cent-variant-id="{{ block.settings.contribution_cent_variant_id | default: '8720793665590' }}"
   data-fep-dollar-variant-id="{{ block.settings.contribution_dollar_variant_id | default: '8721388634166' }}"
   data-fep-default-route="{{ block.settings.default_route | default: 'where_needed_most' }}"
@@ -18,6 +19,13 @@
   "name": "FEP Movement cart drawer",
   "target": "body",
   "settings": [
+    {
+      "type": "checkbox",
+      "id": "enabled",
+      "label": "Enable Movement contribution",
+      "default": false,
+      "info": "G0 kill switch. Leave off until signed-event and reconciliation dependencies are accepted."
+    },
     {
       "type": "text",
       "id": "contribution_cent_variant_id",

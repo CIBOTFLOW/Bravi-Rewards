@@ -13,11 +13,13 @@ Replace these files in your Shopify app project:
 - `extensions/fep-cart-match/assets/fep-match.js`
 - `extensions/fep-cart-match/assets/fep-match.css`
 
-The cart-page block and side-cart embed now create a real, optional Shopify
-contribution line. Enable **FEP Movement cart drawer** under Theme settings →
-App embeds, and use the same $1.00 and $0.01 variant IDs on both surfaces. See
-`extensions/fep-cart-match/README.md` for product configuration and the full
-acceptance test.
+The cart-page block and side-cart embed can create a real, optional Shopify
+contribution line, but the new `Enable Movement contribution` kill switch is
+default-off. Enabling the app block alone does not enable contribution mutations.
+Use the same $1.00 and $0.01 variant IDs on both surfaces and keep the switch off
+until signed-event and reconciliation dependencies pass their gates. See
+`extensions/fep-cart-match/README.md` for the synthetic G0 lab, product
+configuration, and the full acceptance test.
 
 Optional: use `pages/fep-mission-page.html` as the body content for `/pages/fep-mission` in Shopify.
 

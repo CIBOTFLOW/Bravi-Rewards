@@ -67,6 +67,7 @@
     const primary = Number(element?.dataset.fepPrimaryPercent || 2.5) / 100;
     const secondary = Number(element?.dataset.fepSecondaryPercent || 5) / 100;
     return {
+      enabled: String(element?.dataset.fepEnabled || "false") === "true",
       centVariantId: String(element?.dataset.fepCentVariantId || "").trim(),
       dollarVariantId: String(element?.dataset.fepDollarVariantId || "").trim(),
       defaultRoute: ROUTES[element?.dataset.fepDefaultRoute]
@@ -223,6 +224,14 @@
     status.dataset.state = state;
   }
 
+  function syncOptIn(mount) {
+    const optIn = mount.querySelector("[data-fep-opt-in]");
+    const hasContribution = mount.querySelector("[data-fep-remove]") !== null;
+    mount.querySelectorAll("[data-fep-rate]").forEach((button) => {
+      button.disabled = locked || (!hasContribution && !optIn?.checked);
+    });
+  }
+
   function setBusy(value) {
     locked = value;
     document.querySelectorAll(MOUNT_SELECTOR).forEach((mount) => {
@@ -230,6 +239,7 @@
       mount.querySelectorAll("button, select, input").forEach((control) => {
         control.disabled = value;
       });
+      if (!value) syncOptIn(mount);
     });
   }
 
@@ -249,6 +259,14 @@
   async function addContribution(mount, rate) {
     if (locked) return;
     const config = configFrom(mount);
+    if (!config.enabled) {
+      setStatus(mount, "Movement contributions are currently unavailable. Checkout is unchanged.", "error");
+      return;
+    }
+    if (!mount.querySelector("[data-fep-opt-in]")?.checked) {
+      setStatus(mount, "Choose the explicit opt-in before adding a contribution.", "error");
+      return;
+    }
     if (!config.centVariantId || !config.dollarVariantId || config.centVariantId === config.dollarVariantId) {
       setStatus(mount, "The Movement contribution products need to be configured in the theme editor.", "error");
       return;
@@ -286,6 +304,7 @@
   async function removeContribution(mount) {
     if (locked) return;
     const config = configFrom(mount);
+    if (!config.enabled) return;
     setBusy(true);
     setStatus(mount, "Removing the contribution…", "working");
     try {
@@ -304,6 +323,10 @@
 
   function renderMount(mount, cart) {
     const config = configFrom(mount);
+    if (!config.enabled) {
+      mount.innerHTML = "";
+      return;
+    }
     const subtotal = baseSubtotalMinor(cart, config);
     if (!cart?.items?.length || subtotal <= 0) {
       mount.innerHTML = "";
@@ -339,7 +362,12 @@
 
         <p class="fep-match__body">Choose an amount below. It becomes a real Shopify cart item and is included in checkout.</p>
 
-        <div class="fep-match__amounts" aria-label="Choose a contribution amount">
+        <label class="fep-match__opt-in">
+          <input type="checkbox" data-fep-opt-in ${existingMinor ? "checked" : ""}>
+          <span>I choose to add a priced Movement contribution to this order.</span>
+        </label>
+
+        <div class="fep-match__amounts" role="group" aria-label="Choose a contribution amount">
           ${buttons}
         </div>
 
@@ -372,7 +400,9 @@
     mount.querySelectorAll("[data-fep-rate]").forEach((button) => {
       button.addEventListener("click", () => addContribution(mount, Number(button.dataset.fepRate)));
     });
+    mount.querySelector("[data-fep-opt-in]")?.addEventListener("change", () => syncOptIn(mount));
     mount.querySelector("[data-fep-remove]")?.addEventListener("click", () => removeContribution(mount));
+    syncOptIn(mount);
   }
 
   async function renderAll(cart) {

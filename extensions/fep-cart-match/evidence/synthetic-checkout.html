@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>B05 synthetic checkout evidence</title>
+    <link rel="stylesheet" href="../assets/fep-match.css">
+    <style>
+      :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: #f1f3f7; color: #16213f; }
+      body { margin: 0; }
+      .shell { width: min(920px, calc(100% - 32px)); margin: 0 auto; padding: 44px 0 64px; }
+      .eyebrow { margin: 0 0 8px; color: #d71920; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+      h1 { max-width: 680px; margin: 0; font-size: clamp(30px, 6vw, 54px); line-height: 1.02; letter-spacing: -.045em; }
+      .lede { max-width: 650px; margin: 16px 0 26px; color: #667085; line-height: 1.6; }
+      .truth { display: inline-flex; border-radius: 999px; padding: 7px 11px; background: #fff2d9; color: #784c00; font-size: 12px; font-weight: 750; }
+      .layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(260px, .75fr); gap: 18px; margin-top: 24px; align-items: start; }
+      .panel { border: 1px solid rgba(22,33,63,.12); border-radius: 18px; padding: 20px; background: #fff; box-shadow: 0 12px 34px rgba(22,33,63,.07); }
+      .panel h2 { margin: 0 0 15px; font-size: 17px; }
+      .line { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-top: 1px solid rgba(22,33,63,.1); }
+      .line:first-of-type { border-top: 0; }
+      .line.total { margin-top: 8px; font-size: 18px; font-weight: 800; }
+      .muted { color: #667085; font-size: 12px; }
+      .switch { display: flex; gap: 9px; align-items: flex-start; margin-top: 18px; padding: 12px; border-radius: 12px; background: #f7f8fb; font-size: 12px; font-weight: 700; }
+      .switch input { width: 17px; height: 17px; margin: 0; }
+      @media (max-width: 720px) { .shell { padding-top: 28px; } .layout { grid-template-columns: 1fr; } }
+    </style>
+    <script src="./synthetic-shopify.js" defer></script>
+    <script src="../assets/fep-match.js" defer></script>
+  </head>
+  <body>
+    <main class="shell">
+      <p class="eyebrow">L5 · B05 · G0 evidence</p>
+      <h1>Checkout behavior, without a checkout.</h1>
+      <p class="lede">This local-only lab runs the production theme asset against an in-memory Shopify Cart API. It proves priced opt-in, cart-total changes, replacement, removal, and a hard default-off switch. It cannot create an order, payment, refund, webhook, or journal entry.</p>
+      <span class="truth">Synthetic · local only · no provider effects</span>
+
+      <div class="layout">
+        <section class="panel" aria-labelledby="cart-title">
+          <h2 id="cart-title">Synthetic cart</h2>
+          <div data-synthetic-cart-lines></div>
+          <div class="line total"><span>Cart total</span><span data-synthetic-total>$100.00</span></div>
+          <div
+            data-fep-block
+            data-fep-context="synthetic"
+            data-fep-enabled="true"
+            data-fep-cent-variant-id="8720793665590"
+            data-fep-dollar-variant-id="8721388634166"
+            data-fep-default-route="where_needed_most"
+            data-fep-primary-percent="2.5"
+            data-fep-secondary-percent="5"
+            data-fep-intent-version="fep-contribution-v2"
+          ></div>
+        </section>
+
+        <aside class="panel" aria-labelledby="proof-title">
+          <h2 id="proof-title">Evidence boundary</h2>
+          <p class="muted">Merchandise begins at $100.00. A 2.5% opt-in must add exactly $2.50; 5% must replace it with $5.00; Remove must return the total to $100.00.</p>
+          <label class="switch">
+            <input type="checkbox" data-synthetic-kill-switch checked>
+            <span>Enable the G0 contribution surface. Turning this off hides the surface and blocks new mutations.</span>
+          </label>
+          <p class="muted" data-synthetic-events aria-live="polite">No synthetic cart mutation yet.</p>
+        </aside>
+      </div>
+    </main>
+  </body>
+</html>

@@ -2,6 +2,18 @@
 
 This theme extension adds an optional, priced Fulfillment Economics Movement contribution to both the cart page and a supported side-cart drawer.
 
+## G0 safety posture
+
+Both theme surfaces have a default-off `Enable Movement contribution` setting.
+When disabled, the customer surface is absent and add/remove handlers refuse cart
+mutations. The customer must also check an explicit opt-in before either priced
+percentage button becomes available.
+
+The local-only lab at `evidence/synthetic-checkout.html` runs the production theme
+asset against an in-memory Shopify Cart API. It proves `$100.00 → $102.50 →
+$105.00 → $100.00`, replacement, removal, and the kill switch without contacting
+Shopify, creating an order, or emitting a payment/refund/provider effect.
+
 ## Shopify product setup
 
 Create one product named `Fulfillment Economics Movement contribution` and publish it to the Online Store channel. It must have two active variants:
@@ -26,13 +38,18 @@ Replace both IDs in the theme settings when installing on another store.
 2. Add **FEP Movement contribution** to the Cart template where the theme supports app blocks.
 3. Open **Theme settings → App embeds** and enable **FEP Movement cart drawer**.
 4. Enter the same two contribution variant IDs in both surfaces.
-5. Save and publish the theme only after the checks below pass.
+5. Leave `Enable Movement contribution` off until B03 and the signed-event/reconciliation gates are accepted.
+6. Save and publish the theme only after the checks below pass and explicit human G2 GO is recorded.
 
 The drawer embed looks for common drawer elements, including Prestige-style `cart-drawer`, and inserts the compact card immediately before the drawer footer or checkout action. It listens for drawer replacement and Shopify cart events, and emits `cart:refresh` plus `shopify:cart:lines-update` after mutations.
 
 ## Required server configuration
 
 Add both variant IDs to `fepContributionVariantIds` in the Shopify ingestion program. Those variants are automatically excluded from the rewards-earning basis. Only allowlisted variants and their settled Shopify prices count as a contribution; line-item properties are metadata, never amount authority.
+
+Contribution normalization also requires `fepContributionEnabled: true`. When it
+is false or absent, the allowlisted variants remain excluded from rewards basis
+but no contribution or refund-reversal payload is emitted.
 
 ## Acceptance test
 

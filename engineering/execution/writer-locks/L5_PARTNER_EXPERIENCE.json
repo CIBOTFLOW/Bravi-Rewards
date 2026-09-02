@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0.0",
+  "lane": "L5",
+  "owner": "lane-agent-L5",
+  "repository": "CIBOTFLOW/Bravi-Rewards",
+  "branch": "codex/l5-b05-synthetic-checkout",
+  "controller_release": "19cf3a752f761a632349ab2581efc2730a557964",
+  "base_sha": "5715aee0b04c89aaf80c8174a316d0deb78f8320",
+  "acquired_at": "2026-09-02T21:57:03Z",
+  "status": "active",
+  "exclusive": true,
+  "scope": ["B05"],
+  "previous_repository_lock": "CIBOTFLOW/Supplier-Designer-Portal",
+  "rule": "Only this repository is mutable while status is active."
+}
