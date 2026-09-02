@@ -7,9 +7,12 @@
   "controller_release": "19cf3a752f761a632349ab2581efc2730a557964",
   "base_sha": "5715aee0b04c89aaf80c8174a316d0deb78f8320",
   "acquired_at": "2026-09-02T21:57:03Z",
-  "status": "active",
+  "status": "released",
+  "released_at": "2026-09-02T22:10:21Z",
+  "release_reason": "Exact implementation, CI, signed synthetic event, browser, negative-path, and base-recovery evidence recorded before moving the lane lock.",
   "exclusive": true,
   "scope": ["B05"],
   "previous_repository_lock": "CIBOTFLOW/Supplier-Designer-Portal",
+  "next_repository_lock": "CIBOTFLOW/bravvi",
   "rule": "Only this repository is mutable while status is active."
 }

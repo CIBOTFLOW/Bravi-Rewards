@@ -1,0 +1,18 @@
+{
+  "updated_at": "2026-09-02T22:10:21Z",
+  "status": "G0_EVIDENCE_SUBMITTED_NOT_INTEGRATED",
+  "assignment": "B05",
+  "controller_release": "19cf3a752f761a632349ab2581efc2730a557964",
+  "repository": "CIBOTFLOW/Bravi-Rewards",
+  "branch": "codex/l5-b05-synthetic-checkout",
+  "base_sha": "5715aee0b04c89aaf80c8174a316d0deb78f8320",
+  "implementation_sha": "41fe5fd5f40ba7a1d81e300435edd549b10231d9",
+  "handoff_revision": "SELF",
+  "pull_request": "https://github.com/CIBOTFLOW/Bravi-Rewards/pull/10",
+  "workflow_run_id": 33688836261,
+  "preview_deployment_id": null,
+  "handoff": "engineering/execution/handoffs/L5_B05_SYNTHETIC_CHECKOUT_2026-09-02.md",
+  "writer_lock": "engineering/execution/writer-locks/L5_PARTNER_EXPERIENCE.json",
+  "truth": "G0 evidence only; not integrated and not production-ready",
+  "next_action": "Controller validates the packet; money/refund reconciliation and Shopify activation remain blocked on B03 and human G2 GO."
+}
