@@ -2,6 +2,7 @@
   const DOLLAR_VARIANT = "8721388634166";
   const CENT_VARIANT = "8720793665590";
   let sequence = 0;
+  let failNextAdd = false;
   let cart = {
     currency: "USD",
     items: [{
@@ -26,6 +27,14 @@
     return Promise.resolve({ ok: true, status: 200, json: async () => structuredClone(body) });
   }
 
+  function errorResponse(status, message) {
+    return Promise.resolve({
+      ok: false,
+      status,
+      json: async () => ({ description: message }),
+    });
+  }
+
   window.fetch = async function syntheticFetch(input, options = {}) {
     const path = new URL(String(input), window.location.href).pathname;
     if (path.endsWith("/cart.js")) return response(copyCart());
@@ -37,6 +46,11 @@
       return response(copyCart());
     }
     if (path.endsWith("/cart/add.js")) {
+      if (failNextAdd) {
+        failNextAdd = false;
+        renderSummary("Synthetic add failure returned. Recovery should preserve the previous contribution.");
+        return errorResponse(422, "Synthetic cart rejected the requested replacement.");
+      }
       for (const item of request.items || []) {
         const variantId = String(item.id);
         const unitMinor = variantId === DOLLAR_VARIANT ? 100 : variantId === CENT_VARIANT ? 1 : 0;
@@ -78,14 +92,31 @@
     renderSummary();
     const mount = document.querySelector("[data-fep-block]");
     document.querySelector("[data-synthetic-kill-switch]")?.addEventListener("change", (event) => {
-      mount.dataset.fepEnabled = String(event.currentTarget.checked);
+      document.querySelectorAll("[data-fep-block], [data-fep-embed], [data-fep-drawer-mount]")
+        .forEach((surface) => {
+          surface.dataset.fepEnabled = String(event.currentTarget.checked);
+        });
       document.documentElement.dispatchEvent(new CustomEvent("shopify:cart:lines-update", {
         bubbles: true,
         detail: { cart: copyCart(), source: "synthetic-control" },
       }));
       renderSummary(event.currentTarget.checked
         ? "G0 contribution surface enabled."
-        : "Kill switch disabled the contribution surface; cart contents were left unchanged.");
+        : "Kill switch blocked new additions; any existing contribution remains removable.");
     });
+    document.querySelector("[data-synthetic-fail-next-add]")?.addEventListener("click", () => {
+      failNextAdd = true;
+      renderSummary("The next synthetic add will fail once so the recovery path can be verified.");
+    });
+  });
+
+  window.__braviB05Evidence = Object.freeze({
+    snapshot: () => structuredClone(copyCart()),
+    effects: Object.freeze({
+      providerCalls: 0,
+      journalWrites: 0,
+      canonicalReadbacks: 0,
+      effectPosture: "NO_EFFECT",
+    }),
   });
 })();

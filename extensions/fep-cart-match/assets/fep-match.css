@@ -247,6 +247,16 @@
 
 .fep-match__meta p[data-state="error"] {
   color: #a3151b;
+  font-weight: 650;
+}
+
+.fep-match--recovery {
+  border-color: rgba(163, 21, 27, 0.35);
+  background: #fffafa;
+}
+
+.fep-match--recovery .fep-match__meta {
+  background: #fff0f1;
 }
 
 .fep-match__remove {
@@ -315,5 +325,21 @@
   .fep-match__amount,
   .fep-match__remove {
     transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .fep-match,
+  .fep-match__amount,
+  .fep-match__remove,
+  .fep-match__opt-in,
+  .fep-match__field select {
+    border: 1px solid CanvasText;
+  }
+
+  .fep-match__amount.is-active,
+  .fep-match__mark {
+    background: Highlight;
+    color: HighlightText;
   }
 }

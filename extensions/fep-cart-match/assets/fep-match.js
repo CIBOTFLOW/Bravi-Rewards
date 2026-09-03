@@ -42,6 +42,7 @@
 
   let locked = false;
   let observerTimer = null;
+  let mountSequence = 0;
 
   function cartUrl(path) {
     const root = window.Shopify?.routes?.root || "/";
@@ -217,6 +218,25 @@
     });
   }
 
+  function restorableContributionItems(cart, config) {
+    return fepItems(cart, config).map((item) => ({
+      id: String(item.variant_id || item.id),
+      quantity: Number(item.quantity),
+      properties: JSON.parse(JSON.stringify(item.properties || {})),
+    }));
+  }
+
+  function addContributionItems(items) {
+    return jsonRequest("cart/add.js", {
+      method: "POST",
+      body: JSON.stringify({
+        items,
+        sections: SECTION_IDS,
+        sections_url: window.location.pathname,
+      }),
+    });
+  }
+
   function setStatus(mount, message, state = "") {
     const status = mount.querySelector("[data-fep-status]");
     if (!status) return;
@@ -236,6 +256,7 @@
     locked = value;
     document.querySelectorAll(MOUNT_SELECTOR).forEach((mount) => {
       mount.classList.toggle("is-loading", value);
+      mount.setAttribute("aria-busy", String(value));
       mount.querySelectorAll("button, select, input").forEach((control) => {
         control.disabled = value;
       });
@@ -272,6 +293,8 @@
       return;
     }
 
+    let previousItems = [];
+    let previousItemsRemoved = false;
     setBusy(true);
     setStatus(mount, "Updating your cart…", "working");
     try {
@@ -280,22 +303,34 @@
       if (!totalMinor) throw new Error("Add a merchandise item before adding a Movement contribution.");
       const route = selectedRoute(mount, cart, config);
       const followUp = followUpRequested(mount, cart, config);
-      cart = await removeExistingContribution(cart, config);
+      previousItems = restorableContributionItems(cart, config);
+      if (previousItems.length) {
+        cart = await removeExistingContribution(cart, config);
+        previousItemsRemoved = true;
+      }
       const items = contributionItems(totalMinor, rate, route, followUp, config);
-      const result = await jsonRequest("cart/add.js", {
-        method: "POST",
-        body: JSON.stringify({
-          items,
-          sections: SECTION_IDS,
-          sections_url: window.location.pathname,
-        }),
-      });
+      const result = await addContributionItems(items);
       cart = await getCart();
       notifyTheme(cart, result?.sections);
       await renderAll(cart);
     } catch (error) {
       console.error("FEP Movement contribution add failed", error);
-      setStatus(mount, error?.message || "The contribution could not be added. Checkout is unchanged.", "error");
+      if (previousItemsRemoved) {
+        try {
+          const restored = await addContributionItems(previousItems);
+          const cart = await getCart();
+          notifyTheme(cart, restored?.sections);
+          await renderAll(cart);
+          setStatus(mount, "The new amount could not be added. Your previous contribution was restored; review the cart before checkout.", "error");
+        } catch (recoveryError) {
+          console.error("FEP Movement contribution recovery failed", recoveryError);
+          const cart = await getCart().catch(() => null);
+          if (cart) await renderAll(cart);
+          setStatus(mount, "The update failed and the previous contribution could not be restored. Review the cart before checkout or remove any remaining contribution.", "error");
+        }
+      } else {
+        setStatus(mount, error?.message || "The contribution could not be added. Checkout is unchanged.", "error");
+      }
     } finally {
       setBusy(false);
     }
@@ -304,7 +339,6 @@
   async function removeContribution(mount) {
     if (locked) return;
     const config = configFrom(mount);
-    if (!config.enabled) return;
     setBusy(true);
     setStatus(mount, "Removing the contribution…", "working");
     try {
@@ -323,8 +357,32 @@
 
   function renderMount(mount, cart) {
     const config = configFrom(mount);
+    const existingMinor = existingContributionMinor(cart, config);
+    const currency = cart.currency || "USD";
+    const statusId = mount.dataset.fepStatusId || `fep-match-status-${mountSequence += 1}`;
+    mount.dataset.fepStatusId = statusId;
     if (!config.enabled) {
-      mount.innerHTML = "";
+      if (!existingMinor) {
+        mount.innerHTML = "";
+        return;
+      }
+      mount.innerHTML = `
+        <section class="fep-match fep-match--recovery" data-fep-match-ui aria-label="Movement contribution recovery">
+          <div class="fep-match__header">
+            <span class="fep-match__mark" aria-hidden="true">FEP</span>
+            <div>
+              <p class="fep-match__eyebrow">Contribution controls paused</p>
+              <h3 class="fep-match__headline">A contribution is still in your cart</h3>
+            </div>
+            <span class="fep-match__added">${money(existingMinor, currency)}</span>
+          </div>
+          <p class="fep-match__body">New contributions are disabled. You can still remove this existing line before checkout.</p>
+          <div class="fep-match__meta">
+            <p id="${statusId}" data-fep-status data-state="error" role="status" aria-live="polite" aria-atomic="true">Your cart total is unchanged until you remove it.</p>
+            <button type="button" class="fep-match__remove" data-fep-remove aria-describedby="${statusId}">Remove contribution</button>
+          </div>
+        </section>`;
+      mount.querySelector("[data-fep-remove]")?.addEventListener("click", () => removeContribution(mount));
       return;
     }
     const subtotal = baseSubtotalMinor(cart, config);
@@ -333,18 +391,17 @@
       return;
     }
 
-    const existingMinor = existingContributionMinor(cart, config);
     const activeRate = currentRate(cart, config);
     const existingRoute = selectedRoute(mount, cart, config);
     const existingFollowUp = followUpRequested(mount, cart, config);
-    const currency = cart.currency || "USD";
     const buttons = config.rates.map((rate) => {
       const amount = contributionMinor(cart, config, rate);
       const active = activeRate === rate && existingMinor === amount;
+      const action = active ? "Selected" : existingMinor ? "Replace with" : "Add";
       return `
         <button type="button" class="fep-match__amount ${active ? "is-active" : ""}"
-          data-fep-rate="${rate}" aria-pressed="${active}">
-          <span>${existingMinor && activeRate === rate && !active ? "Update" : "Add"} ${rateLabel(rate)}</span>
+          data-fep-rate="${rate}" aria-pressed="${active}" aria-describedby="${statusId}">
+          <span>${action} ${rateLabel(rate)}</span>
           <strong>${money(amount, currency)}</strong>
         </button>`;
     }).join("");
@@ -363,7 +420,7 @@
         <p class="fep-match__body">Choose an amount below. It becomes a real Shopify cart item and is included in checkout.</p>
 
         <label class="fep-match__opt-in">
-          <input type="checkbox" data-fep-opt-in ${existingMinor ? "checked" : ""}>
+          <input type="checkbox" data-fep-opt-in aria-describedby="${statusId}" ${existingMinor ? "checked" : ""}>
           <span>I choose to add a priced Movement contribution to this order.</span>
         </label>
 
@@ -386,15 +443,15 @@
         </details>
 
         <div class="fep-match__meta">
-          <p data-fep-status data-state="${existingMinor ? "success" : ""}" aria-live="polite">
+          <p id="${statusId}" data-fep-status data-state="${existingMinor ? "success" : ""}" role="status" aria-live="polite" aria-atomic="true">
             ${existingMinor
               ? `${money(existingMinor, currency)} is included in the cart total.`
               : "No contribution has been added yet."}
           </p>
-          ${existingMinor ? '<button type="button" class="fep-match__remove" data-fep-remove>Remove</button>' : ""}
+          ${existingMinor ? `<button type="button" class="fep-match__remove" data-fep-remove aria-describedby="${statusId}">Remove</button>` : ""}
         </div>
 
-        <p class="fep-match__footnote">Allocation begins only after Shopify confirms payment. Paid and refunded events are reconciled server-side.</p>
+        <p class="fep-match__footnote">Allocation begins only after Shopify confirms payment. Until B03 passes its gates, journal and refund reconciliation remain disabled.</p>
       </section>`;
 
     mount.querySelectorAll("[data-fep-rate]").forEach((button) => {
