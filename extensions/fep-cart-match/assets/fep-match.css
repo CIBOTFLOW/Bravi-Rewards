@@ -280,6 +280,7 @@
 }
 
 [data-fep-drawer-mount] {
+  box-sizing: border-box;
   width: 100%;
   padding: 0 18px;
 }

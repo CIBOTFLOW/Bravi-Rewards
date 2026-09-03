@@ -99,6 +99,7 @@ test("interactive controls expose durable status relationships and forced-color 
   assert.match(js, /role="status" aria-live="polite" aria-atomic="true"/);
   assert.match(js, /aria-describedby/);
   assert.match(js, /aria-busy/);
+  assert.match(css, /\[data-fep-drawer-mount\][\s\S]*box-sizing: border-box/);
   assert.match(css, /@media \(forced-colors: active\)/);
   assert.match(css, /:focus-visible/);
 });
