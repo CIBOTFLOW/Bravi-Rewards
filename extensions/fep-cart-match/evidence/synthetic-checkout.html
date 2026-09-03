@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>B05 synthetic checkout evidence</title>
+    <link rel="stylesheet" href="../assets/fep-match.css">
+    <style>
+      :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: #f1f3f7; color: #16213f; }
+      body { margin: 0; }
+      .shell { width: min(920px, calc(100% - 32px)); margin: 0 auto; padding: 44px 0 64px; }
+      .eyebrow { margin: 0 0 8px; color: #d71920; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+      h1 { max-width: 680px; margin: 0; font-size: clamp(30px, 6vw, 54px); line-height: 1.02; letter-spacing: -.045em; }
+      .lede { max-width: 650px; margin: 16px 0 26px; color: #667085; line-height: 1.6; }
+      .truth { display: inline-flex; border-radius: 999px; padding: 7px 11px; background: #fff2d9; color: #784c00; font-size: 12px; font-weight: 750; }
+      .layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(260px, .75fr); gap: 18px; margin-top: 24px; align-items: start; }
+      .panel { border: 1px solid rgba(22,33,63,.12); border-radius: 18px; padding: 20px; background: #fff; box-shadow: 0 12px 34px rgba(22,33,63,.07); }
+      .panel h2 { margin: 0 0 15px; font-size: 17px; }
+      .line { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-top: 1px solid rgba(22,33,63,.1); }
+      .line:first-of-type { border-top: 0; }
+      .line.total { margin-top: 8px; font-size: 18px; font-weight: 800; }
+      .muted { color: #667085; font-size: 12px; }
+      .switch { display: flex; gap: 9px; align-items: flex-start; margin-top: 18px; padding: 12px; border-radius: 12px; background: #f7f8fb; font-size: 12px; font-weight: 700; }
+      .switch input { width: 17px; height: 17px; margin: 0; }
+      .proof-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+      .proof-actions button { min-height: 42px; border: 1px solid #16213f; border-radius: 10px; padding: 8px 12px; background: #fff; color: #16213f; font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
+      .proof-actions button:hover, .proof-actions button:focus-visible { background: #16213f; color: #fff; outline: 3px solid rgba(22,33,63,.2); outline-offset: 2px; }
+      .proof-list { display: grid; gap: 9px; margin: 18px 0 0; }
+      .proof-list div { border-top: 1px solid rgba(22,33,63,.1); padding-top: 9px; }
+      .proof-list dt { color: #667085; font-size: 10px; font-weight: 750; letter-spacing: .07em; text-transform: uppercase; }
+      .proof-list dd { margin: 4px 0 0; overflow-wrap: anywhere; font-size: 11px; line-height: 1.45; }
+      .drawer-demo { display: block; margin-top: 18px; }
+      .drawer-demo .cart-drawer__footer { margin-top: 12px; border-top: 1px solid rgba(22,33,63,.1); padding-top: 12px; }
+      .checkout-placeholder { width: 100%; min-height: 44px; border: 0; border-radius: 11px; background: #16213f; color: #fff; font: inherit; font-weight: 750; opacity: .62; }
+      @media (max-width: 720px) { .shell { padding-top: 28px; } .layout { grid-template-columns: 1fr; } }
+    </style>
+    <script src="./synthetic-shopify.js" defer></script>
+    <script src="../assets/fep-match.js" defer></script>
+  </head>
+  <body>
+    <main
+      class="shell"
+      data-controller-release="b626c665d14a7baf419ec2fef42b1ee98b66a370"
+      data-fep-producer-sha="5e9b64528c536b9a5b6b283422a171438f09dd48"
+      data-effect-posture="NO_EFFECT"
+    >
+      <p class="eyebrow">L5 · B05 · G0 evidence</p>
+      <h1>Checkout behavior, without a checkout.</h1>
+      <p class="lede">This isolated G0 lab runs the production theme asset against an in-memory Shopify Cart API. It proves priced opt-in, cart-total changes, replacement, removal, and a hard default-off switch. It cannot create an order, payment, refund, webhook, journal entry, or canonical readback.</p>
+      <span class="truth">Synthetic · local only · no provider effects</span>
+
+      <div class="layout">
+        <section class="panel" aria-labelledby="cart-title">
+          <h2 id="cart-title">Synthetic cart</h2>
+          <div data-synthetic-cart-lines></div>
+          <div class="line total"><span>Cart total</span><span data-synthetic-total>$100.00</span></div>
+          <div
+            data-fep-block
+            data-fep-context="synthetic"
+            data-fep-enabled="true"
+            data-fep-cent-variant-id="8720793665590"
+            data-fep-dollar-variant-id="8721388634166"
+            data-fep-default-route="where_needed_most"
+            data-fep-primary-percent="2.5"
+            data-fep-secondary-percent="5"
+            data-fep-intent-version="fep-contribution-v2"
+          ></div>
+        </section>
+
+        <aside class="panel" aria-labelledby="proof-title">
+          <h2 id="proof-title">Evidence boundary</h2>
+          <p class="muted">Merchandise begins at $100.00. A 2.5% opt-in must add exactly $2.50; 5% must replace it with $5.00; Remove must return the total to $100.00.</p>
+          <label class="switch">
+            <input type="checkbox" data-synthetic-kill-switch checked>
+            <span>Enable the G0 contribution surface. Turning this off blocks new additions while preserving a removal path for an existing contribution.</span>
+          </label>
+          <div class="proof-actions">
+            <button type="button" data-synthetic-fail-next-add>Simulate next add failure</button>
+          </div>
+          <p class="muted" data-synthetic-events role="status" aria-live="polite" aria-atomic="true">No synthetic cart mutation yet.</p>
+          <p class="muted" data-synthetic-effects>Provider calls 0 · journal writes 0 · canonical readbacks 0</p>
+          <dl class="proof-list">
+            <div><dt>FEP producer</dt><dd><code>5e9b64528c536b9a5b6b283422a171438f09dd48</code></dd></div>
+            <div><dt>Journal draft</dt><dd><code>fep-balanced-journal/v0.1-draft</code></dd></div>
+            <div><dt>Adapter</dt><dd><code>bravi-b03-compatibility/v0.2</code></dd></div>
+            <div><dt>Authority</dt><dd>Synthetic only · effect disabled · <code>NO_EFFECT</code></dd></div>
+          </dl>
+        </aside>
+      </div>
+
+      <cart-drawer class="panel drawer-demo" aria-labelledby="drawer-title">
+        <h2 id="drawer-title">Synthetic cart drawer</h2>
+        <p class="muted">The production drawer mounting path inserts the same controls before checkout.</p>
+        <div class="cart-drawer__footer">
+          <button class="checkout-placeholder" type="button" disabled>Checkout unavailable in G0</button>
+        </div>
+      </cart-drawer>
+
+      <div
+        data-fep-embed
+        hidden
+        data-fep-context="drawer"
+        data-fep-enabled="true"
+        data-fep-cent-variant-id="8720793665590"
+        data-fep-dollar-variant-id="8721388634166"
+        data-fep-default-route="where_needed_most"
+        data-fep-primary-percent="2.5"
+        data-fep-secondary-percent="5"
+        data-fep-intent-version="fep-contribution-v2"
+      ></div>
+    </main>
+  </body>
+</html>

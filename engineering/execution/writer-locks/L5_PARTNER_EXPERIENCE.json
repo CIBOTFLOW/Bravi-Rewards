@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "lane": "L5",
+  "owner": "lane-agent-L5",
+  "repository": "CIBOTFLOW/Bravi-Rewards",
+  "branch": "codex/l5-b05-synthetic-checkout",
+  "controller_release": "b626c665d14a7baf419ec2fef42b1ee98b66a370",
+  "base_sha": "5715aee0b04c89aaf80c8174a316d0deb78f8320",
+  "acquired_at": "2026-09-03T03:21:24Z",
+  "status": "released",
+  "released_at": "2026-09-03T03:44:48Z",
+  "release_reason": "B05 B03-pinned G0 implementation, exact-SHA CI/browser/preview evidence, rollback proof, and controller-ready handoff recorded.",
+  "exclusive": true,
+  "scope": ["B05"],
+  "previous_repository_lock": "CIBOTFLOW/Bravi-Rewards@8cec252d3079ad35bb6463f02a0fea53051aaf23 (released 2026-09-02T22:10:21Z)",
+  "next_repository_lock": null,
+  "rule": "Bravi-Rewards writer lock released; do not start another partner repository write until the controller records this handoff."
+}

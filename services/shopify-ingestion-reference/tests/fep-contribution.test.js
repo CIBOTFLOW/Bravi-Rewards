@@ -88,9 +88,43 @@ test("paid-order normalization separates contribution from rewards basis", () =>
       rateBps: 300,
       currency: "USD",
       fepContributionVariantIds: VARIANTS,
+      fepContributionEnabled: true,
     },
   });
   assert.equal(event.basisMinor, 10_000);
   assert.equal(event.rewardMinor, 300);
   assert.equal(event.fepContribution.amountMinor, 2180);
+});
+
+test("server kill switch suppresses contribution processing while retaining rewards exclusion", () => {
+  const order = {
+    id: 43,
+    currency: "USD",
+    created_at: "2026-09-01T00:00:00Z",
+    line_items: [
+      { product_id: 1, variant_id: 10, quantity: 1, price: "100.00", total_discount: "0.00" },
+      ...contributionLines(),
+    ],
+  };
+  const rawBody = JSON.stringify(order);
+  const event = normalizeVerifiedShopifyWebhook({
+    rawBody,
+    headers: {
+      "x-shopify-hmac-sha256": createHmac("sha256", "secret").update(rawBody).digest("base64"),
+      "x-shopify-webhook-id": "wh_fep_disabled",
+      "x-shopify-topic": "orders/paid",
+      "x-shopify-shop-domain": "luzione-dev-store.myshopify.com",
+    },
+    secret: "secret",
+    program: {
+      id: "luzione-rewards",
+      version: "v4",
+      rateBps: 300,
+      currency: "USD",
+      fepContributionVariantIds: VARIANTS,
+      fepContributionEnabled: false,
+    },
+  });
+  assert.equal(event.basisMinor, 10_000);
+  assert.equal(event.fepContribution, null);
 });

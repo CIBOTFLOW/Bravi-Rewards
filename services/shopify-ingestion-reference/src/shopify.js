@@ -109,6 +109,7 @@ function normalizedProgram(program) {
     excludedProductIds: stringSet(program.excludedProductIds),
     excludedVariantIds: stringSet(program.excludedVariantIds),
     fepContributionVariantIds: stringSet(program.fepContributionVariantIds),
+    fepContributionEnabled: program.fepContributionEnabled === true,
     excludeGiftCards: program.excludeGiftCards !== false,
   };
 }
@@ -213,10 +214,9 @@ export function normalizeVerifiedShopifyWebhook({ rawBody, headers, secret, prog
     const orderId = toBigIntId(payload?.id);
     if (!orderId) throw new ShopifyWebhookError("order id is required");
     const basisMinor = computeEligibleOrderBasisMinor(payload, program);
-    const fepContribution = summarizeFepContributionOrder(
-      payload,
-      program.fepContributionVariantIds,
-    );
+    const fepContribution = program.fepContributionEnabled
+      ? summarizeFepContributionOrder(payload, program.fepContributionVariantIds)
+      : null;
     return {
       ...envelope,
       economic: true,
@@ -233,10 +233,9 @@ export function normalizeVerifiedShopifyWebhook({ rawBody, headers, secret, prog
     const orderId = toBigIntId(payload?.order_id);
     if (!refundId || !orderId) throw new ShopifyWebhookError("refund and linked order ids are required");
     const basisMinor = computeEligibleRefundBasisMinor(payload, program);
-    const fepContributionReversal = summarizeFepContributionRefund(
-      payload,
-      program.fepContributionVariantIds,
-    );
+    const fepContributionReversal = program.fepContributionEnabled
+      ? summarizeFepContributionRefund(payload, program.fepContributionVariantIds)
+      : null;
     return {
       ...envelope,
       economic: true,
