@@ -44,6 +44,7 @@ test("drawer embed mounts responsively and refreshes theme cart surfaces", () =>
   assert.match(js, /cart-drawer/);
   assert.match(js, /cart:refresh/);
   assert.match(js, /shopify:cart:lines-update/);
+  assert.match(js, /key !== "fepEmbed"/);
   assert.match(js, /sections: SECTION_IDS/);
   assert.doesNotMatch(js, /window\.location\.reload/);
 });

@@ -82,7 +82,7 @@
 
   function copyConfig(source, target) {
     for (const [key, value] of Object.entries(source.dataset)) {
-      if (key.startsWith("fep")) target.dataset[key] = value;
+      if (key.startsWith("fep") && key !== "fepEmbed") target.dataset[key] = value;
     }
   }
 
