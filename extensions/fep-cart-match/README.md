@@ -17,17 +17,24 @@ $105.00 → $100.00`, cart and drawer mounting, replacement recovery, removal, a
 the kill switch without contacting Shopify, creating an order, or emitting a
 payment, refund, provider, journal, or canonical-readback effect.
 
-The adjacent compatibility adapter is pinned to the effect-disabled B03 candidate:
+The adjacent compatibility adapter is pinned to the corrected, effect-disabled B03 post-commit candidate:
 
-- controller release: `b626c665d14a7baf419ec2fef42b1ee98b66a370`
-- FEP producer: `CIBOTFLOW/FEP-Platform@5e9b64528c536b9a5b6b283422a171438f09dd48`
+- controller release: `b43e5a65c0ae8c8bcef7e015e4a3484877f736b0`
+- FEP producer implementation/final: `CIBOTFLOW/FEP-Platform@5db6cc8772c40a7127b7514c57787299ddad57a5`
 - journal: `fep-balanced-journal/v0.1-draft`
-- A02 producer: `CIBOTFLOW/Luzione-API@f2d643a0913b888809c217adfd9bdcef0385b05a`
+- A02 producer implementation: `CIBOTFLOW/Luzione-API@12685f46a60edea23aaa0a5403e300bf8858066b`
+- A02 final evidence: `CIBOTFLOW/Luzione-API@bc43d5db8fe58230d6c3d35e32a73e1e8618b71e`
 - contracts: `luzione-shared-contracts/v0.2-draft.1`, `luzione-identity-tenant/v0.2-draft.1`, `luzione-command-envelope/v0.2-draft.1`, `luzione-receipt-envelope/v0.2-draft.1`, and `luzione-readback-envelope/v0.2-draft.1`
+- raw API manifest SHA-256: `2d7479019d04d24344b1d4bf4d953abee2d3382ed56b8201ebb49289253e00b7` (`sha256-raw-file-v1`)
+- separately labeled canonical JSON SHA-256: `eaf983e1496187a22688ddfed45b541fe88a3e2b70a2fbc60863fae1a9484208` (`sha256-canonical-json-recursive-key-sort-v1`)
 
-It accepts only signed, server-bound synthetic events and returns `NO_EFFECT`.
-Settlement and refund state exists only in memory; no B03 journal write or A02
-canonical readback is requested, and no response is business-final.
+It accepts only signed, server-bound synthetic checkout/refund events as
+command/precondition input and rejects caller-supplied receipt, readback,
+finality, or committed object versions. A separate consumer accepts only the
+pinned FEP producer's `DOMAIN_COMMITTED` receipt plus fresh `SOURCE_CONFIRMED`
+exact-tenant/head post-commit readback. Settlement and refund state exists only
+in memory; Bravi performs no domain or journal write, provider call, money
+movement, refund, or canonical readback. This remains synthetic G0 evidence.
 
 ## Shopify product setup
 
