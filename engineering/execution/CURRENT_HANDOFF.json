@@ -1,25 +1,26 @@
 {
-  "updated_at": "2026-09-03T03:44:48Z",
+  "updated_at": "2026-09-04T00:15:59Z",
   "status": "G0_EVIDENCE_SUBMITTED_NOT_INTEGRATED",
   "assignment": "B05",
-  "controller_release": "b626c665d14a7baf419ec2fef42b1ee98b66a370",
+  "controller_release": "b43e5a65c0ae8c8bcef7e015e4a3484877f736b0",
   "repository": "CIBOTFLOW/Bravi-Rewards",
-  "branch": "codex/l5-b05-synthetic-checkout",
-  "base_sha": "5715aee0b04c89aaf80c8174a316d0deb78f8320",
-  "implementation_sha": "602640d904a13cd7ddaeefd45cf21089a26c3b0e",
+  "branch": "codex/l5-b05-postcommit-readback-g0",
+  "base_sha": "dda60df9382771d03f29398926f6d5404e072abc",
+  "implementation_sha": "ed72e7d5ee92f2f88c0572aa1f1ec82531c6f7cb",
   "handoff_revision": "SELF",
-  "pull_request": "https://github.com/CIBOTFLOW/Bravi-Rewards/pull/10",
-  "workflow_run_id": 33712014659,
-  "preview_deployment_id": "dpl_2ZXzkzuT8TYiYydbREys1tSnhhMJ",
-  "preview_target": "preview",
-  "preview_protected": true,
-  "preview_url": "https://bravi-rewards-b05-preview-package-602640d-n3zmrkxmh.vercel.app",
-  "unexpected_first_deployment_ids": [
+  "pull_request": "https://github.com/CIBOTFLOW/Bravi-Rewards/pull/11",
+  "implementation_workflow_run_id": 33820768363,
+  "implementation_artifact_id": 9918171719,
+  "implementation_artifact_digest": "sha256:c22f47f6633ea8b640e83bc6f0bfd7e048d872599bff27c9bb7f196a84cdd110",
+  "preview_deployment_id": null,
+  "preview_truth": "No Git-linked Bravi-Rewards Vercel project or commit deployment/status exists; no manual deployment was performed.",
+  "preserved_prior_preview_deployment_id": "dpl_2ZXzkzuT8TYiYydbREys1tSnhhMJ",
+  "preserved_prior_unexpected_first_deployment_ids": [
     "dpl_BrG35ohXZtQKN35XFss6p3WiHK3d",
     "dpl_7yQeAZbqxCKuGLri5Y89ysYMPDUS"
   ],
-  "handoff": "engineering/execution/handoffs/L5_B05_B03_PINNED_G0_2026-09-03.md",
+  "handoff": "engineering/execution/handoffs/L5_B05_POSTCOMMIT_READBACK_G0_2026-09-04.md",
   "writer_lock": "engineering/execution/writer-locks/L5_PARTNER_EXPERIENCE.json",
   "truth": "G0 evidence only; not integrated and not production-ready",
-  "next_action": "Controller records this packet and obtains explicit human G2 disposition for the two isolated Vercel first-deployment records; B05 money/refund and Shopify/public activation remain blocked on B03 G1 and separate G2 GO."
+  "next_action": "Controller independently verifies PR #11's final exact-SHA CI proof artifact against FEP producer 5db6cc8772c40a7127b7514c57787299ddad57a5, records isolated B05 G0 evidence, and keeps money/refund and every G2 path stopped."
 }
