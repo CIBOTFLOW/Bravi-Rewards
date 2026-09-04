@@ -11,6 +11,9 @@ on:
 permissions:
   contents: read
 
+env:
+  CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   rewards-core:
     runs-on: ubuntu-latest
@@ -20,6 +23,10 @@ jobs:
         working-directory: services/rewards-core-reference
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+      - name: Verify exact candidate checkout
+        run: test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -33,16 +40,35 @@ jobs:
         working-directory: services/shopify-ingestion-reference
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+      - name: Verify exact candidate checkout
+        run: test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
       - uses: actions/setup-node@v4
         with:
           node-version: 20
       - run: npm test
+      - name: Write B05 exact-SHA post-commit proof
+        env:
+          B05_PROOF_PATH: b05-postcommit-proof.json
+        run: node scripts/write-b05-postcommit-proof.mjs
+      - name: Upload B05 exact-SHA post-commit proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: b05-postcommit-proof-${{ env.CANDIDATE_SHA }}
+          path: services/shopify-ingestion-reference/b05-postcommit-proof.json
+          if-no-files-found: error
+          retention-days: 14
 
   shopify-theme-contribution:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+      - name: Verify exact candidate checkout
+        run: test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
       - uses: actions/setup-node@v4
         with:
           node-version: 20

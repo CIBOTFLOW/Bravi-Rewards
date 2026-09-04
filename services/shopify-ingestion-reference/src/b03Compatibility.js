@@ -5,14 +5,19 @@ import { normalizeVerifiedShopifyWebhook } from "./shopify.js";
 export const B05_EVENT_CONTRACT = "bravi-shopify-fep-event/v0.2-draft";
 
 export const B03_COMPATIBILITY_PIN = immutableClone({
-  controllerRelease: "b626c665d14a7baf419ec2fef42b1ee98b66a370",
+  controllerRelease: "b43e5a65c0ae8c8bcef7e015e4a3484877f736b0",
   dependencyRepository: "CIBOTFLOW/FEP-Platform",
   dependencyAssignment: "B03",
-  dependencyImplementationSha: "5e9b64528c536b9a5b6b283422a171438f09dd48",
+  dependencyImplementationSha: "5db6cc8772c40a7127b7514c57787299ddad57a5",
+  dependencyFinalSha: "5db6cc8772c40a7127b7514c57787299ddad57a5",
   dependencyContract: "fep-balanced-journal/v0.1-draft",
   dependencyStatus: "G0_EFFECT_DISABLED_DRAFT",
+  inputAuthority: "COMMAND_AND_PRECONDITION_ONLY",
+  receiptAuthority: "FEP_DERIVED_AFTER_ATOMIC_APPEND",
+  readbackAuthority: "EXACT_TENANT_HEAD_POST_COMMIT_QUERY",
   a02ProducerRepository: "CIBOTFLOW/Luzione-API",
-  a02ProducerImplementationSha: "f2d643a0913b888809c217adfd9bdcef0385b05a",
+  a02ProducerImplementationSha: "12685f46a60edea23aaa0a5403e300bf8858066b",
+  a02ProducerFinalSha: "bc43d5db8fe58230d6c3d35e32a73e1e8618b71e",
   a02ContractVersions: [
     "luzione-shared-contracts/v0.2-draft.1",
     "luzione-identity-tenant/v0.2-draft.1",
@@ -21,13 +26,23 @@ export const B03_COMPATIBILITY_PIN = immutableClone({
     "luzione-readback-envelope/v0.2-draft.1",
   ],
   a02ArtifactSha256: {
-    "contracts/drafts/luzione-shared-contracts-v0.2-draft.1.manifest.json": "d0971d0cf9aaf3f1037ef0165de4960f16aa93e13db4e033e9602a4c7a265f41",
+    "contracts/drafts/luzione-shared-contracts-v0.2-draft.1.manifest.json": "2d7479019d04d24344b1d4bf4d953abee2d3382ed56b8201ebb49289253e00b7",
     "contracts/drafts/identity-tenant-v0.2-draft.1.schema.json": "38a6f9b89c87df3491cbddbc7bb73e964e86a1afe1917a1751fe67814ed0506e",
     "contracts/drafts/command-envelope-v0.2-draft.1.schema.json": "aaed7baa30a4fc904f15bd8ac7076138442e9a33d8f57a49332a3a68e22cc205",
     "contracts/drafts/receipt-envelope-v0.2-draft.1.schema.json": "ca358428fa144fa10da10d26d67649c76bb6a271171f55501f15cc9cd63123bf",
     "contracts/drafts/readback-envelope-v0.2-draft.1.schema.json": "f40f42640b4c7c8c2149b9845b10e74e59911bc3c610ccaa7195a33c6b014b0c",
   },
-  adapter: "bravi-b03-compatibility/v0.2",
+  a02ManifestDigests: {
+    rawFile: {
+      algorithm: "sha256-raw-file-v1",
+      sha256: "2d7479019d04d24344b1d4bf4d953abee2d3382ed56b8201ebb49289253e00b7",
+    },
+    canonicalJson: {
+      algorithm: "sha256-canonical-json-recursive-key-sort-v1",
+      sha256: "eaf983e1496187a22688ddfed45b541fe88a3e2b70a2fbc60863fae1a9484208",
+    },
+  },
+  adapter: "bravi-b03-compatibility/v0.3-postcommit-consumer",
   eventContract: B05_EVENT_CONTRACT,
   effectPosture: "NO_EFFECT",
   runtimeActivation: false,
@@ -73,8 +88,12 @@ function noEffectBoundary() {
   return {
     effectPosture: B03_COMPATIBILITY_PIN.effectPosture,
     effectApplied: false,
+    domainWritePerformed: false,
     journalWritePerformed: false,
     canonicalReadbackPerformed: false,
+    providerCallPerformed: false,
+    moneyMovementPerformed: false,
+    refundIssued: false,
     businessFinal: false,
   };
 }
@@ -88,26 +107,60 @@ function rejected(reason, details = {}) {
   });
 }
 
-function accepted(kind, details) {
+function prepared(kind, details) {
+  const expectationBinding = {
+    adapter: B03_COMPATIBILITY_PIN.adapter,
+    tenantId: details.tenantId,
+    sourceEventId: details.sourceEventId,
+    sourceSequence: details.sourceSequence,
+    kind,
+    amountMinor: details.amountMinor,
+    currency: details.currency,
+  };
+  const expectationDigest = fingerprint(expectationBinding);
   return immutableClone({
-    status: "accepted_no_effect",
+    status: "prepared_no_effect",
+    phase: B03_COMPATIBILITY_PIN.inputAuthority,
     kind,
     ...details,
     contractPin: B03_COMPATIBILITY_PIN,
-    syntheticJournal: {
+    fepSubmissionBoundary: {
       contractVersion: B03_COMPATIBILITY_PIN.dependencyContract,
-      effectMode: "DISABLED",
+      inputAuthority: B03_COMPATIBILITY_PIN.inputAuthority,
+      receiptIncluded: false,
+      readbackIncluded: false,
+      finalityIncluded: false,
+      committedObjectVersionIncluded: false,
       appendRequested: false,
       appendPerformed: false,
     },
-    syntheticReadback: {
-      contractVersion: B03_COMPATIBILITY_PIN.a02ContractVersions[4],
-      requested: false,
-      finality: "NOT_APPLICABLE",
-      businessFinal: false,
+    fepEvidenceExpectation: {
+      tenantId: details.tenantId,
+      sourceEventId: details.sourceEventId,
+      commandId: `bravi-b05-command-sha256:${expectationDigest}`,
+      correlationId: `bravi-b05-correlation-sha256:${fingerprint(details.sourceEventId)}`,
+      idempotencyKey: `${details.tenantId}:${details.sourceEventId}`,
+      payloadHash: expectationDigest,
+      objectOwner: B03_COMPATIBILITY_PIN.dependencyRepository,
+      objectType: "fep-balanced-journal",
+      objectId: `fep-balanced-journal/tenant-sha256:${fingerprint(details.tenantId)}`,
     },
     ...noEffectBoundary(),
   });
+}
+
+const CALLER_COMMITTED_STATE_KEYS = Object.freeze([
+  "receipt",
+  "readback",
+  "finality",
+  "businessFinal",
+  "committedObjectVersion",
+  "objectVersionTransition",
+]);
+
+function includesCallerCommittedState(value) {
+  return value && typeof value === "object"
+    && CALLER_COMMITTED_STATE_KEYS.some((key) => Object.prototype.hasOwnProperty.call(value, key));
 }
 
 /**
@@ -123,6 +176,12 @@ export function normalizeEffectDisabledB03ShopifyEvent({
   synthetic = false,
   ...shopifyInput
 }) {
+  if (includesCallerCommittedState(shopifyInput)) {
+    throw new B03CompatibilityError(
+      "CALLER_COMMITTED_STATE_FORBIDDEN",
+      "checkout/refund input cannot supply a receipt, readback, finality, or committed object version",
+    );
+  }
   if (synthetic !== true) {
     throw new B03CompatibilityError("SYNTHETIC_MODE_REQUIRED", "B05 compatibility accepts synthetic events only");
   }
@@ -148,9 +207,12 @@ export function normalizeEffectDisabledB03ShopifyEvent({
     contractPins: {
       controllerRelease: B03_COMPATIBILITY_PIN.controllerRelease,
       fepProducerImplementationSha: B03_COMPATIBILITY_PIN.dependencyImplementationSha,
+      fepProducerFinalSha: B03_COMPATIBILITY_PIN.dependencyFinalSha,
       journalContract: B03_COMPATIBILITY_PIN.dependencyContract,
       a02ProducerImplementationSha: B03_COMPATIBILITY_PIN.a02ProducerImplementationSha,
+      a02ProducerFinalSha: B03_COMPATIBILITY_PIN.a02ProducerFinalSha,
       a02ContractVersions: B03_COMPATIBILITY_PIN.a02ContractVersions,
+      a02ManifestDigests: B03_COMPATIBILITY_PIN.a02ManifestDigests,
     },
     identity: {
       serverDerived: true,
@@ -187,8 +249,11 @@ function validatePins(event) {
   }
   if (pins?.controllerRelease !== B03_COMPATIBILITY_PIN.controllerRelease
     || pins?.fepProducerImplementationSha !== B03_COMPATIBILITY_PIN.dependencyImplementationSha
+    || pins?.fepProducerFinalSha !== B03_COMPATIBILITY_PIN.dependencyFinalSha
     || pins?.journalContract !== B03_COMPATIBILITY_PIN.dependencyContract
     || pins?.a02ProducerImplementationSha !== B03_COMPATIBILITY_PIN.a02ProducerImplementationSha
+    || pins?.a02ProducerFinalSha !== B03_COMPATIBILITY_PIN.a02ProducerFinalSha
+    || fingerprint(pins?.a02ManifestDigests) !== fingerprint(B03_COMPATIBILITY_PIN.a02ManifestDigests)
     || !exactStringSet(pins?.a02ContractVersions, B03_COMPATIBILITY_PIN.a02ContractVersions)) {
     return "producer_or_contract_version_drift";
   }
@@ -225,6 +290,7 @@ export function createEffectDisabledFepReconciler({
   function reconcile(event) {
     if (!enabled) return rejected("kill_switch_disabled");
     if (!expectedTenantId || !expectedShopDomain) return rejected("adapter_configuration_missing");
+    if (includesCallerCommittedState(event)) return rejected("caller_committed_state_forbidden");
 
     const pinFailure = validatePins(event);
     if (pinFailure) return rejected(pinFailure);
@@ -310,7 +376,8 @@ export function createEffectDisabledFepReconciler({
       });
       streams.set(streamKey, event.sourceSequence);
       seen.set(eventKey, envelopeDigest);
-      return accepted("contribution_settled", {
+      return prepared("contribution_settled", {
+        tenantId: identity.tenantId,
         orderKey,
         amountMinor: contribution.amountMinor,
         currency: event.sourceEvent.currency,
@@ -346,7 +413,8 @@ export function createEffectDisabledFepReconciler({
       order.lastSequence = event.sourceSequence;
       streams.set(streamKey, event.sourceSequence);
       seen.set(eventKey, envelopeDigest);
-      return accepted("contribution_refund", {
+      return prepared("contribution_refund", {
+        tenantId: identity.tenantId,
         orderKey,
         amountMinor: reversal.amountMinor,
         remainingMinor: order.settledMinor - order.refundedMinor,
@@ -368,10 +436,231 @@ export function createEffectDisabledFepReconciler({
         expectedShopDomain,
         effectPosture: B03_COMPATIBILITY_PIN.effectPosture,
         effectApplied: false,
+        domainWritePerformed: false,
         journalWritePerformed: false,
         canonicalReadbackPerformed: false,
+        providerCallPerformed: false,
+        moneyMovementPerformed: false,
+        refundIssued: false,
         seenEventCount: seen.size,
         orders: Array.from(orders, ([orderKey, value]) => ({ orderKey, ...value })),
+      });
+    },
+  };
+}
+
+function isRecord(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function hasExactKeys(value, expected) {
+  return isRecord(value)
+    && fingerprint(Object.keys(value).sort()) === fingerprint([...expected].sort());
+}
+
+function matchesEvidenceId(value, prefix) {
+  return typeof value === "string"
+    && new RegExp(`^${prefix}[a-f0-9]{64}$`).test(value);
+}
+
+function validateFepPostCommitEvidence(preparedEvent, evidence, expectedTenantId, nowMs) {
+  if (!isRecord(preparedEvent)
+    || preparedEvent.status !== "prepared_no_effect"
+    || preparedEvent.phase !== B03_COMPATIBILITY_PIN.inputAuthority
+    || preparedEvent.businessFinal !== false
+    || ["receipt", "readback", "finality", "committedObjectVersion", "objectVersionTransition"]
+      .some((key) => Object.prototype.hasOwnProperty.call(preparedEvent, key))) {
+    return "caller_committed_state_forbidden";
+  }
+  const expectation = preparedEvent.fepEvidenceExpectation;
+  if (!hasExactKeys(expectation, [
+    "tenantId", "sourceEventId", "commandId", "correlationId", "idempotencyKey", "payloadHash",
+    "objectOwner", "objectType", "objectId",
+  ])) return "prepared_expectation_invalid";
+  if (expectation.tenantId !== expectedTenantId) return "post_commit_tenant_mismatch";
+
+  if (!hasExactKeys(evidence, ["source", "apiCompatibility", "authority", "receipt", "readback"])) {
+    return "post_commit_schema_shape_mismatch";
+  }
+  if (!hasExactKeys(evidence.source, ["repository", "implementationSha", "finalSha", "contractVersion"])
+    || evidence.source.repository !== B03_COMPATIBILITY_PIN.dependencyRepository
+    || evidence.source.implementationSha !== B03_COMPATIBILITY_PIN.dependencyImplementationSha
+    || evidence.source.finalSha !== B03_COMPATIBILITY_PIN.dependencyFinalSha
+    || evidence.source.contractVersion !== B03_COMPATIBILITY_PIN.dependencyContract) {
+    return "fep_source_pin_mismatch";
+  }
+  if (!hasExactKeys(evidence.apiCompatibility, [
+    "repository", "implementationSha", "finalSha", "contractVersions", "manifestDigests",
+  ])
+    || evidence.apiCompatibility.repository !== B03_COMPATIBILITY_PIN.a02ProducerRepository
+    || evidence.apiCompatibility.implementationSha !== B03_COMPATIBILITY_PIN.a02ProducerImplementationSha
+    || evidence.apiCompatibility.finalSha !== B03_COMPATIBILITY_PIN.a02ProducerFinalSha
+    || !exactStringSet(evidence.apiCompatibility.contractVersions, B03_COMPATIBILITY_PIN.a02ContractVersions)
+    || fingerprint(evidence.apiCompatibility.manifestDigests) !== fingerprint(B03_COMPATIBILITY_PIN.a02ManifestDigests)) {
+    return "api_compatibility_pin_mismatch";
+  }
+  if (!hasExactKeys(evidence.authority, [
+    "receiptAuthority", "readbackAuthority", "derivedAfterAtomicAppend", "exactTenantHeadQuery",
+    "effectsEnabled", "runtimeActivation", "productionMigration",
+  ])
+    || evidence.authority.receiptAuthority !== B03_COMPATIBILITY_PIN.receiptAuthority
+    || evidence.authority.readbackAuthority !== B03_COMPATIBILITY_PIN.readbackAuthority
+    || evidence.authority.derivedAfterAtomicAppend !== true
+    || evidence.authority.exactTenantHeadQuery !== true
+    || evidence.authority.effectsEnabled !== false
+    || evidence.authority.runtimeActivation !== false
+    || evidence.authority.productionMigration !== false) {
+    return "post_commit_authority_invalid";
+  }
+
+  const receipt = evidence.receipt;
+  if (!hasExactKeys(receipt, [
+    "contractVersion", "receiptId", "commandId", "correlationId", "tenantId", "state",
+    "effectAuthority", "idempotency", "object", "evidence",
+  ])
+    || receipt.contractVersion !== B03_COMPATIBILITY_PIN.a02ContractVersions[3]
+    || receipt.state !== "DOMAIN_COMMITTED"
+    || receipt.effectAuthority !== "NOT_GRANTED_BY_CONTRACT"
+    || !matchesEvidenceId(receipt.receiptId, "fep-receipt-sha256:")
+    || receipt.commandId !== expectation.commandId
+    || receipt.correlationId !== expectation.correlationId
+    || receipt.tenantId !== expectation.tenantId) {
+    return "fep_receipt_invalid";
+  }
+  if (!hasExactKeys(receipt.idempotency, ["key", "payloadHash", "replay"])
+    || receipt.idempotency.key !== expectation.idempotencyKey
+    || receipt.idempotency.payloadHash !== expectation.payloadHash
+    || typeof receipt.idempotency.replay !== "boolean") {
+    return "fep_receipt_idempotency_mismatch";
+  }
+  if (!hasExactKeys(receipt.object, ["ownerProject", "type", "id", "version"])
+    || receipt.object.ownerProject !== expectation.objectOwner
+    || receipt.object.type !== expectation.objectType
+    || receipt.object.id !== expectation.objectId
+    || !/^fep-balanced-journal-head\/sha256:[a-f0-9]{64}$/.test(receipt.object.version)) {
+    return "fep_receipt_object_mismatch";
+  }
+  if (!hasExactKeys(receipt.evidence, ["eventId", "outboxMessageId"])
+    || receipt.evidence.eventId !== expectation.sourceEventId
+    || !matchesEvidenceId(receipt.evidence.outboxMessageId, "fep-no-effect-outbox-sha256:")) {
+    return "fep_receipt_evidence_mismatch";
+  }
+
+  const readback = evidence.readback;
+  if (!hasExactKeys(readback, [
+    "contractVersion", "tenantId", "finality", "businessFinal", "freshness", "object", "evidence", "reason",
+  ])
+    || readback.contractVersion !== B03_COMPATIBILITY_PIN.a02ContractVersions[4]
+    || readback.tenantId !== expectation.tenantId
+    || readback.finality !== "SOURCE_CONFIRMED"
+    || readback.businessFinal !== true
+    || typeof readback.reason !== "string"
+    || readback.reason.trim().length < 2) {
+    return "fep_readback_invalid";
+  }
+  if (!hasExactKeys(readback.freshness, ["state", "observedAt", "freshUntil"])
+    || readback.freshness.state !== "FRESH") return "fep_readback_stale";
+  const observedAtMs = Date.parse(readback.freshness.observedAt);
+  const freshUntilMs = Date.parse(readback.freshness.freshUntil);
+  if (!Number.isFinite(observedAtMs) || !Number.isFinite(freshUntilMs)
+    || observedAtMs > nowMs || freshUntilMs < nowMs) return "fep_readback_stale";
+  if (fingerprint(readback.object) !== fingerprint(receipt.object)) return "fep_readback_object_mismatch";
+  if (!hasExactKeys(readback.evidence, [
+    "receiptId", "commandId", "eventId", "providerAcknowledgementRef", "reconciliationId", "sourceReadbackRef",
+  ])
+    || readback.evidence.receiptId !== receipt.receiptId
+    || readback.evidence.commandId !== receipt.commandId
+    || readback.evidence.eventId !== receipt.evidence.eventId
+    || readback.evidence.providerAcknowledgementRef !== null
+    || !matchesEvidenceId(readback.evidence.reconciliationId, "fep-reconciliation-sha256:")
+    || !matchesEvidenceId(readback.evidence.sourceReadbackRef, "fep-readback-sha256:")) {
+    return "fep_readback_evidence_mismatch";
+  }
+  return null;
+}
+
+/**
+ * Consumes a strictly labeled B03 post-commit receipt/readback. The checkout or
+ * refund caller can provide command/precondition input only; this separate
+ * consumer accepts committed/final state solely from the pinned FEP boundary.
+ */
+export function createEffectDisabledFepPostCommitConsumer({
+  enabled = false,
+  expectedTenantId = null,
+  clock = () => new Date(),
+} = {}) {
+  const consumed = new Map();
+
+  function consume(preparedEvent, evidence) {
+    if (!enabled) return rejected("post_commit_consumer_kill_switch_disabled");
+    if (!expectedTenantId) return rejected("post_commit_consumer_configuration_missing");
+    const validationFailure = validateFepPostCommitEvidence(
+      preparedEvent,
+      evidence,
+      expectedTenantId,
+      clock().getTime(),
+    );
+    if (validationFailure) return rejected(validationFailure);
+
+    const receipt = evidence.receipt;
+    const key = `${receipt.tenantId}:${receipt.idempotency.key}`;
+    const commitBinding = fingerprint({
+      source: evidence.source,
+      tenantId: receipt.tenantId,
+      commandId: receipt.commandId,
+      correlationId: receipt.correlationId,
+      idempotencyKey: receipt.idempotency.key,
+      payloadHash: receipt.idempotency.payloadHash,
+      object: receipt.object,
+      receiptId: receipt.receiptId,
+      eventId: receipt.evidence.eventId,
+      outboxMessageId: receipt.evidence.outboxMessageId,
+      reconciliationId: evidence.readback.evidence.reconciliationId,
+      sourceReadbackRef: evidence.readback.evidence.sourceReadbackRef,
+    });
+    const prior = consumed.get(key);
+    if (prior && prior !== commitBinding) return rejected("fep_post_commit_conflict");
+    if (prior === commitBinding) {
+      return immutableClone({
+        status: "duplicate_fep_post_commit_no_effect",
+        tenantId: receipt.tenantId,
+        receiptId: receipt.receiptId,
+        sourceFinality: evidence.readback.finality,
+        fepBusinessFinal: true,
+        postCommitEvidenceConsumed: true,
+        ...noEffectBoundary(),
+      });
+    }
+    consumed.set(key, commitBinding);
+    return immutableClone({
+      status: receipt.idempotency.replay
+        ? "fep_post_commit_replay_confirmed_no_effect"
+        : "fep_post_commit_confirmed_no_effect",
+      tenantId: receipt.tenantId,
+      receiptId: receipt.receiptId,
+      objectVersion: receipt.object.version,
+      sourceFinality: evidence.readback.finality,
+      fepBusinessFinal: true,
+      postCommitEvidenceConsumed: true,
+      ...noEffectBoundary(),
+    });
+  }
+
+  return {
+    consume,
+    snapshot() {
+      return immutableClone({
+        enabled,
+        expectedTenantId,
+        consumedCommitCount: consumed.size,
+        effectPosture: B03_COMPATIBILITY_PIN.effectPosture,
+        effectApplied: false,
+        domainWritePerformed: false,
+        journalWritePerformed: false,
+        canonicalReadbackPerformed: false,
+        providerCallPerformed: false,
+        moneyMovementPerformed: false,
+        refundIssued: false,
       });
     },
   };

@@ -105,11 +105,21 @@ test("interactive controls expose durable status relationships and forced-color 
 });
 
 test("synthetic evidence pins exact B03 and declares zero external effects", () => {
-  assert.match(adapter, /5e9b64528c536b9a5b6b283422a171438f09dd48/);
+  assert.match(adapter, /5db6cc8772c40a7127b7514c57787299ddad57a5/);
+  assert.match(adapter, /12685f46a60edea23aaa0a5403e300bf8858066b/);
+  assert.match(adapter, /bc43d5db8fe58230d6c3d35e32a73e1e8618b71e/);
+  assert.match(adapter, /2d7479019d04d24344b1d4bf4d953abee2d3382ed56b8201ebb49289253e00b7/);
+  assert.match(adapter, /eaf983e1496187a22688ddfed45b541fe88a3e2b70a2fbc60863fae1a9484208/);
   assert.match(adapter, /fep-balanced-journal\/v0\.1-draft/);
-  assert.match(adapter, /bravi-b03-compatibility\/v0\.2/);
+  assert.match(adapter, /bravi-b03-compatibility\/v0\.3-postcommit-consumer/);
+  assert.match(adapter, /CALLER_COMMITTED_STATE_FORBIDDEN/);
+  assert.match(adapter, /FEP_DERIVED_AFTER_ATOMIC_APPEND/);
+  assert.match(adapter, /EXACT_TENANT_HEAD_POST_COMMIT_QUERY/);
+  assert.match(adapter, /domainWritePerformed: false/);
   assert.match(adapter, /journalWritePerformed: false/);
   assert.match(adapter, /canonicalReadbackPerformed: false/);
   assert.match(evidence, /data-effect-posture="NO_EFFECT"/);
+  assert.match(evidence, /5db6cc8772c40a7127b7514c57787299ddad57a5/);
+  assert.match(evidence, /bravi-b03-compatibility\/v0\.3-postcommit-consumer/);
   assert.match(evidence, /Provider calls 0 · journal writes 0 · canonical readbacks 0/);
 });
